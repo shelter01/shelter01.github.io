@@ -1,0 +1,892 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>手写题（面） | 谢尔特的小窝</title>
+<link rel="shortcut icon" href="https://shelter01.github.io/favicon.ico?v=1689069773793">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://shelter01.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="手写题（面） | 谢尔特的小窝 - Atom Feed" href="https://shelter01.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="判断数据类型
+Object.prototype.toString.call(obj).split(' ')[1]
+
+随机min-max之间的数字
+Math.floor(Math.random()*(max-min+1))+min
+
+组合寄生..." />
+    <meta name="keywords" content="面试相关" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://shelter01.github.io">
+  <img class="avatar" src="https://shelter01.github.io/images/avatar.png?v=1689069773793" alt="">
+  </a>
+  <h1 class="site-title">
+    谢尔特的小窝
+  </h1>
+  <p class="site-description">
+    个人项目和面试题记录
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              手写题（面）
+            </h2>
+            <div class="post-info">
+              <span>
+                2023-03-19
+              </span>
+              <span>
+                14 min read
+              </span>
+              
+                <a href="https://shelter01.github.io/tag/AmodHRYiW/" class="post-tag">
+                  # 面试相关
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h3 id="判断数据类型">判断数据类型</h3>
+<pre><code class="language-js">Object.prototype.toString.call(obj).split(' ')[1]
+</code></pre>
+<h3 id="随机min-max之间的数字">随机min-max之间的数字</h3>
+<pre><code class="language-js">Math.floor(Math.random()*(max-min+1))+min
+</code></pre>
+<h3 id="组合寄生继承">组合寄生继承</h3>
+<pre><code class="language-js">function Parent() {
+    this.name = 'parent'
+}
+function Child() {
+    Parent.call(this)
+    this.type = 'child'
+}
+Child.prototype = Object.create(Parent.prototype)
+Child.prototype.constructor = Child
+</code></pre>
+<h3 id="深拷贝">深拷贝</h3>
+<pre><code class="language-js">const isComplexDataType = obj =&gt; (typeof obj === 'object' || typeof obj === 'function') &amp;&amp; (obj !== null)
+
+const deepClone = function (obj, hash = new WeakMap()) {
+  if (obj.constructor === Date) {
+    return new Date(obj)       // 日期对象直接返回一个新的日期对象
+  }
+  
+  if (obj.constructor === RegExp){
+    return new RegExp(obj)     //正则对象直接返回一个新的正则对象
+  }
+  
+  //如果循环引用了就用 weakMap 来解决
+  if (hash.has(obj)) {
+    return hash.get(obj)
+  }
+  let allDesc = Object.getOwnPropertyDescriptors(obj)
+
+  //遍历传入参数所有键的特性
+  let cloneObj = Object.create(Object.getPrototypeOf(obj), allDesc)
+
+  // 把cloneObj原型复制到obj上
+  hash.set(obj, cloneObj)
+
+  for (let key of Reflect.ownKeys(obj)) { 
+    cloneObj[key] = (isComplexDataType(obj[key]) &amp;&amp; typeof obj[key] !== 'function') ? deepClone(obj[key], hash) : obj[key]
+  }
+  return cloneObj
+}
+</code></pre>
+<h3 id="数组去重">数组去重</h3>
+<pre><code class="language-js">function unique(arr) {
+    var res = arr.filter(function(item, index, array) {
+        return array.indexOf(item) === index
+    })
+    return res
+}
+
+var unique = arr =&gt; [...new Set(arr)]
+</code></pre>
+<h3 id="数组乱序">数组乱序</h3>
+<pre><code class="language-js">var arr = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+arr.sort(function () {
+    return Math.random() - 0.5;
+});
+</code></pre>
+<h3 id="数组随机排序">数组随机排序</h3>
+<pre><code class="language-js">function randomSort(a, b) {
+  return Math.random() &gt; 0.5 ? -1 : 1;
+}
+</code></pre>
+<h3 id="数组扁平">数组扁平</h3>
+<pre><code class="language-js">[1, [2, [3]]].flat(2)
+
+function flatten(arr) {
+    var result = [];
+    for (var i = 0, len = arr.length; i &lt; len; i++) {
+        if (Array.isArray(arr[i])) {
+            result = result.concat(flatten(arr[i]))
+        } else {
+            result.push(arr[i])
+        }
+    }
+    return result;
+}
+
+function flatten(arr) {
+    while (arr.some(item =&gt; Array.isArray(item))) {
+        arr = [].concat(...arr);
+    }
+    return arr;
+}
+</code></pre>
+<h3 id="数组拆解-flat-123-1-2-3">数组拆解: flat: [1,[2,3]] --&gt; [1, 2, 3]</h3>
+<pre><code class="language-js">Array.prototype.flat = function() {
+    this.toString().split(',').map(item =&gt; +item )
+}
+</code></pre>
+<h3 id="创建一个长度为100值为对应下标的数组">创建一个长度为100，值为对应下标的数组</h3>
+<pre><code class="language-js">[...Array(100).keys()]
+</code></pre>
+<h3 id="解析-url-参数为对象">解析 URL 参数为对象</h3>
+<pre><code class="language-js">function parseParam(url) {
+    const paramsStr = /.+\?(.+)$/.exec(url)[1]; // 将 ? 后面的字符串取出来
+    const paramsArr = paramsStr.split('&amp;'); // 将字符串以 &amp; 分割后存到数组中
+    let paramsObj = {};
+    // 将 params 存到对象中
+    paramsArr.forEach(param =&gt; {
+        if (/=/.test(param)) { // 处理有 value 的参数
+            let [key, val] = param.split('='); // 分割 key 和 value
+            val = decodeURIComponent(val); // 解码
+            val = /^\d+$/.test(val) ? parseFloat(val) : val; // 判断是否转为数字
+    
+            if (paramsObj.hasOwnProperty(key)) { // 如果对象有 key，则添加一个值
+                paramsObj[key] = [].concat(paramsObj[key], val);
+            } else { // 如果对象没有这个 key，创建 key 并设置值
+                paramsObj[key] = val;
+            }
+        } else { // 处理没有 value 的参数
+            paramsObj[param] = true;
+        }
+    })
+    
+    return paramsObj;
+}
+</code></pre>
+<h3 id="promise">promise</h3>
+<p>手写第一种</p>
+<pre><code class="language-js">const PENDING = 'pending'
+const RESOLVED = 'resolved'
+const REJECTED = 'rejected'
+function myPromise (fn) {
+    const that = this
+    this.state = PENDING
+    this.value = null
+    
+    this.resolvedCallbacks = []
+    this.rejectedCallbacks = []
+    
+    function resolve(value) {
+        if (that.state === PENDING) {
+            that.state = RESOLVED
+            that.value = value
+            that.resolvedCallbacks.map(cb =&gt; cb(that.value))
+        }
+    }
+    function reject(value) {
+        if (that.state === PENDING) {
+            that.state = REJECTED
+            that.value = value
+            that.rejectedCallbacks.map(cb =&gt; cb(that.value))
+        }
+    }
+    
+    try {
+        fn(resolve, reject)
+    } catch(e) {
+        reject(e)
+    }
+}
+
+myPromise.prototype.then = function (onFulfilled, onRejected) {
+    const that = this
+    onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : v =&gt; v
+    onRejected = typeof onRejected === 'function' ? onRejected : e =&gt; throw(e)
+
+    if (this.state === PENDING) {
+        this.resolvedCallbacks.push(onFulfilled)
+        this.rejectedCallbacks.push(onRejected)
+    }
+    if (this.state === RESOLVED) {
+        onFulfilled(that.value)
+    }
+    if (this.state === REJECTED) {
+        onRejected(that.value)
+    }
+}
+</code></pre>
+<p>手写第二种</p>
+<pre><code class="language-js">class Promise{
+  // 传入一个executor函数，里面包含resolve和reject两个函数
+  constructor(executor){
+    this.state = 'pending';
+    this.value = undefined;
+    this.reason = undefined;
+    // setTimeout时需要等待state状态的改变，缓存resolve和reject函数
+    // 成功存放的数组
+    this.onResolvedCallbacks = [];
+    // 成功失败的数组
+    this.onRejectedCallbacks = [];
+    // 成功时执行
+    let resolve = value =&gt; {
+      // state状态改变后不能再次改变
+      if (this.state === 'pending') {
+        this.state = 'fulfilled';
+        // 存储成功的值
+        this.value = value;
+        this.onResolvedCallbacks.forEach(fn=&gt;fn());
+      }
+    };
+    // 失败时执行
+    let reject = reason =&gt; {
+      if (this.state === 'pending') {
+        this.state = 'rejected';
+        // 存储失败的原因
+        this.reason = reason;
+        this.onRejectedCallbacks.forEach(fn=&gt;fn());
+      }
+    };
+    try{
+    // 立即执行，如果报错直接reject
+      executor(resolve, reject);
+    } catch (err) {
+      // 会临时创建一个语句上下文，外部访问不到
+      reject(err);
+    }
+  }
+  then(onFulfilled,onRejected) {
+    // onFulfilled如果不是函数，就忽略onFulfilled，直接返回value
+    onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : value =&gt; value;
+    // onRejected如果不是函数，就忽略onRejected，直接扔出错误
+    onRejected = typeof onRejected === 'function' ? onRejected : err =&gt; { throw err };
+    let promise2 = new Promise((resolve, reject) =&gt; {
+      // 状态为fulfilled，执行onFulfilled，传入成功的值
+      if (this.state === 'fulfilled') {
+        // 异步
+        setTimeout(() =&gt; {
+          try {
+            let x = onFulfilled(this.value);
+            // resolvePromise函数，处理自己return的promise和默认的promise2的关系
+            resolvePromise(promise2, x, resolve, reject);
+          } catch (e) {
+            reject(e);
+          }
+        }, 0);
+      };
+      // 状态为rejected，执行onRejected，传入失败的原因
+      if (this.state === 'rejected') {
+        // 异步
+        setTimeout(() =&gt; {
+          // 如果报错
+          try {
+            let x = onRejected(this.reason);
+            resolvePromise(promise2, x, resolve, reject);
+          } catch (e) {
+            reject(e);
+          }
+        }, 0);
+      };
+      // 执行then方法时state还为pedding时，将函数放入缓存数组
+      if (this.state === 'pending') {
+        this.onResolvedCallbacks.push(() =&gt; {
+          // 异步
+          setTimeout(() =&gt; {
+            try {
+              let x = onFulfilled(this.value);
+              resolvePromise(promise2, x, resolve, reject);
+            } catch (e) {
+              reject(e);
+            }
+          }, 0);
+        });
+        this.onRejectedCallbacks.push(() =&gt; {
+          // 异步
+          setTimeout(() =&gt; {
+            try {
+              let x = onRejected(this.reason);
+              resolvePromise(promise2, x, resolve, reject);
+            } catch (e) {
+              reject(e);
+            }
+          }, 0)
+        });
+      };
+    });
+    // 返回promise，完成链式
+    return promise2;
+  }
+}
+
+// 链式调用比较函数
+function resolvePromise(promise2, x, resolve, reject){
+  // 循环引用报错
+  if(x === promise2){
+    // reject报错
+    return reject(new TypeError('Chaining cycle detected for promise'));
+  }
+  // 防止多次调用
+  let called;
+  // x不是null 且x是对象或者函数
+  if (x != null &amp;&amp; (typeof x === 'object' || typeof x === 'function')) {
+    try {
+      // A+规定，声明then = x的then方法
+      let then = x.then;
+      // 如果then是函数，就默认是promise了
+      if (typeof then === 'function') { 
+        // 就让then执行 第一个参数是this   后面是成功的回调 和 失败的回调
+        then.call(x, y =&gt; {
+          // 成功和失败只能调用一个
+          if (called) return;
+          called = true;
+          // resolve的结果依旧是promise 那就继续解析
+          resolvePromise(promise2, y, resolve, reject);
+        }, err =&gt; {
+          // 成功和失败只能调用一个
+          if (called) return;
+          called = true;
+          reject(err);// 失败了就失败了
+        })
+      } else {
+        resolve(x); // 直接成功即可
+      }
+    } catch (e) {
+      // 也属于失败
+      if (called) return;
+      called = true;
+      // 取then出错了那就不要在继续执行了
+      reject(e); 
+    }
+  } else {
+    resolve(x);
+  }
+}
+
+//resolve方法
+Promise.resolve = function(val){
+  return new Promise((resolve,reject)=&gt;{
+    resolve(val)
+  });
+}
+//reject方法
+Promise.reject = function(val){
+  return new Promise((resolve,reject)=&gt;{
+    reject(val)
+  });
+}
+//race方法 
+Promise.race = function(promises){
+  return new Promise((resolve,reject)=&gt;{
+    for(let i=0;i&lt;promises.length;i++){
+      promises[i].then(resolve,reject)
+    };
+  })
+}
+//all方法(获取所有的promise，都执行then，把结果放到数组，一起返回)
+Promise.all = function(promises){
+  let arr = [];
+  let i = 0;
+  function processData(index,data){
+    arr[index] = data;
+    i++;
+    if(i == promises.length){
+      resolve(arr);
+    };
+  };
+  return new Promise((resolve,reject)=&gt;{
+    for(let i=0;i&lt;promises.length;i++){
+      promises[i].then(data=&gt;{
+        processData(i,data);
+      },reject);
+    };
+  });
+}
+</code></pre>
+<h3 id="事件监听">事件监听</h3>
+<pre><code class="language-js">const EventUtils = {
+  // 视能力分别使用dom0||dom2||IE方式 来绑定事件
+  // 添加事件
+  addEvent: function(element, type, handler) {
+    if (element.addEventListener) {
+      element.addEventListener(type, handler, false);
+    } else if (element.attachEvent) {
+      element.attachEvent(&quot;on&quot; + type, handler);
+    } else {
+      element[&quot;on&quot; + type] = handler;
+    }
+  },
+
+  // 移除事件
+  removeEvent: function(element, type, handler) {
+    if (element.removeEventListener) {
+      element.removeEventListener(type, handler, false);
+    } else if (element.detachEvent) {
+      element.detachEvent(&quot;on&quot; + type, handler);
+    } else {
+      element[&quot;on&quot; + type] = null;
+    }
+  },
+
+  // 获取事件目标
+  getTarget: function(event) {
+    return event.target || event.srcElement;
+  },
+
+  // 获取 event 对象的引用，取到事件的所有信息，确保随时能使用 event
+  getEvent: function(event) {
+    return event || window.event;
+  },
+
+  // 阻止事件（主要是事件冒泡，因为 IE 不支持事件捕获）
+  stopPropagation: function(event) {
+    if (event.stopPropagation) {
+      event.stopPropagation();
+    } else {
+      event.cancelBubble = true;
+    }
+  },
+
+  // 取消事件的默认行为
+  preventDefault: function(event) {
+    if (event.preventDefault) {
+      event.preventDefault();
+    } else {
+      event.returnValue = false;
+    }
+  }
+};
+</code></pre>
+<h3 id="new操作符">new操作符</h3>
+<pre><code class="language-js">// （1）首先创建了一个新的空对象
+// （2）设置原型，将对象的原型设置为函数的 prototype 对象。
+// （3）让函数的 this 指向这个对象，执行构造函数的代码（为这个新对象添加属性）
+// （4）判断函数的返回值类型，如果是值类型，返回创建的对象。如果是引用类型，就返回这个引用类型的对象。
+
+// 实现:
+
+function objectFactory() {
+  let newObject = null,
+    constructor = Array.prototype.shift.call(arguments),
+    result = null;
+
+  // 参数判断
+  if (typeof constructor !== &quot;function&quot;) {
+    console.error(&quot;type error&quot;);
+    return;
+  }
+
+  // 新建一个空对象，对象的原型为构造函数的 prototype 对象
+  newObject = Object.create(constructor.prototype);
+
+  // 将 this 指向新建对象，并执行函数
+  result = constructor.apply(newObject, arguments);
+
+  // 判断返回对象
+  let flag =
+    result &amp;&amp; (typeof result === &quot;object&quot; || typeof result === &quot;function&quot;);
+
+  // 判断返回结果
+  return flag ? result : newObject;
+}
+
+// 使用方法
+// objectFactory(构造函数, 初始化参数);
+</code></pre>
+<h3 id="节流和防抖">节流和防抖</h3>
+<pre><code class="language-js">// 函数防抖： 在事件被触发 n 秒后再执行回调，如果在这 n 秒内事件又被触发，则重新计时。
+
+// 函数节流： 规定一个单位时间，在这个单位时间内，只能有一次触发事件的回调函数执行，如果在同一个单位时间内某事件被触发多次，只有一次能生效。
+
+// 函数防抖的实现
+function debounce(fn, wait) {
+  var timer = null;
+
+  return function() {
+    var context = this,
+      args = arguments;
+
+    // 如果此时存在定时器的话，则取消之前的定时器重新记时
+    if (timer) {
+      clearTimeout(timer);
+      timer = null;
+    }
+
+    // 设置定时器，使事件间隔指定事件后执行
+    timer = setTimeout(() =&gt; {
+      fn.apply(context, args);
+    }, wait);
+  };
+}
+
+// 函数节流的实现;
+function throttle(fn, delay) {
+  var preTime = Date.now();
+
+  return function() {
+    var context = this,
+      args = arguments,
+      nowTime = Date.now();
+
+    // 如果两次时间间隔超过了指定时间，则执行函数。
+    if (nowTime - preTime &gt;= delay) {
+      preTime = Date.now();
+      return fn.apply(context, args);
+    }
+  };
+}
+</code></pre>
+<h3 id="手写call-apply-bind">手写call、apply、bind</h3>
+<pre><code class="language-js">// call函数实现
+Function.prototype.myCall = function(context) {
+  // 判断调用对象
+  if (typeof this !== &quot;function&quot;) {
+    console.error(&quot;type error&quot;);
+  }
+
+  // 获取参数
+  let args = [...arguments].slice(1),
+    result = null;
+
+  // 判断 context 是否传入，如果未传入则设置为 window
+  context = context || window;
+
+  // 将调用函数设为对象的方法
+  context.fn = this;
+
+  // 调用函数
+  result = context.fn(...args);
+
+  // 将属性删除
+  delete context.fn;
+
+  return result;
+};
+
+// apply 函数实现
+
+Function.prototype.myApply = function(context) {
+  // 判断调用对象是否为函数
+  if (typeof this !== &quot;function&quot;) {
+    throw new TypeError(&quot;Error&quot;);
+  }
+
+  let result = null;
+
+  // 判断 context 是否存在，如果未传入则为 window
+  context = context || window;
+
+  // 将函数设为对象的方法
+  context.fn = this;
+
+  // 调用方法
+  if (arguments[1]) {
+    result = context.fn(...arguments[1]);
+  } else {
+    result = context.fn();
+  }
+
+  // 将属性删除
+  delete context.fn;
+
+  return result;
+};
+
+// bind 函数实现
+Function.prototype.myBind = function(context) {
+  // 判断调用对象是否为函数
+  if (typeof this !== &quot;function&quot;) {
+    throw new TypeError(&quot;Error&quot;);
+  }
+
+  // 获取参数
+  var args = [...arguments].slice(1),
+    fn = this;
+
+  return function Fn() {
+    // 根据调用方式，传入不同绑定值
+    return fn.apply(
+      this instanceof Fn ? this : context,
+      args.concat(...arguments)
+    );
+  };
+};
+</code></pre>
+<h3 id="jsonp">JSONP</h3>
+<pre><code class="language-js">function jsonp(url, params, callback) {
+  // 判断是否含有参数
+  let queryString = url.indexOf(&quot;?&quot;) === -1 ? &quot;?&quot; : &quot;&amp;&quot;;
+
+  // 添加参数
+  for (var k in params) {
+    if (params.hasOwnProperty(k)) {
+      queryString += k + &quot;=&quot; + params[k] + &quot;&amp;&quot;;
+    }
+  }
+
+  // 处理回调函数名
+  let random = Math.random()
+      .toString()
+      .replace(&quot;.&quot;, &quot;&quot;),
+    callbackName = &quot;myJsonp&quot; + random;
+
+  // 添加回调函数
+  queryString += &quot;callback=&quot; + callbackName;
+
+  // 构建请求
+  let scriptNode = document.createElement(&quot;script&quot;);
+  scriptNode.src = url + queryString;
+
+  window[callbackName] = function() {
+    // 调用回调函数
+    callback(...arguments);
+
+    // 删除这个引入的脚本
+    document.getElementsByTagName(&quot;head&quot;)[0].removeChild(scriptNode);
+  };
+
+  // 发起请求
+  document.getElementsByTagName(&quot;head&quot;)[0].appendChild(scriptNode);
+}
+</code></pre>
+<h3 id="观察者模式">观察者模式</h3>
+<pre><code class="language-js">var events = (function() {
+  var topics = {};
+
+  return {
+    // 注册监听函数
+    subscribe: function(topic, handler) {
+      if (!topics.hasOwnProperty(topic)) {
+        topics[topic] = [];
+      }
+      topics[topic].push(handler);
+    },
+
+    // 发布事件，触发观察者回调事件
+    publish: function(topic, info) {
+      if (topics.hasOwnProperty(topic)) {
+        topics[topic].forEach(function(handler) {
+          handler(info);
+        });
+      }
+    },
+
+    // 移除主题的一个观察者的回调事件
+    remove: function(topic, handler) {
+      if (!topics.hasOwnProperty(topic)) return;
+
+      var handlerIndex = -1;
+      topics[topic].forEach(function(item, index) {
+        if (item === handler) {
+          handlerIndex = index;
+        }
+      });
+
+      if (handlerIndex &gt;= 0) {
+        topics[topic].splice(handlerIndex, 1);
+      }
+    },
+
+    // 移除主题的所有观察者的回调事件
+    removeAll: function(topic) {
+      if (topics.hasOwnProperty(topic)) {
+        topics[topic] = [];
+      }
+    }
+  };
+})();
+</code></pre>
+<h3 id="eventemitter">EventEmitter</h3>
+<pre><code class="language-js">class EventEmitter {
+  constructor() {
+    this.events = {};
+  }
+
+  on(event, callback) {
+    let callbacks = this.events[event] || [];
+    callbacks.push(callback);
+    this.events[event] = callbacks;
+
+    return this;
+  }
+
+  off(event, callback) {
+    let callbacks = this.events[event];
+    this.events[event] = callbacks &amp;&amp; callbacks.filter(fn =&gt; fn !== callback);
+
+    return this;
+  }
+
+  emit(event, ...args) {
+    let callbacks = this.events[event];
+    callbacks.forEach(fn =&gt; {
+      fn(...args);
+    });
+
+    return this;
+  }
+
+  once(event, callback) {
+    let wrapFun = (...args) =&gt; {
+      callback(...args);
+
+      this.off(event, wrapFun);
+    };
+    this.on(event, wrapFun);
+
+    return this;
+  }
+}
+</code></pre>
+<h3 id="大文件上传-断点续传">大文件上传、断点续传</h3>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#%E5%88%A4%E6%96%AD%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B">判断数据类型</a></li>
+<li><a href="#%E9%9A%8F%E6%9C%BAmin-max%E4%B9%8B%E9%97%B4%E7%9A%84%E6%95%B0%E5%AD%97">随机min-max之间的数字</a></li>
+<li><a href="#%E7%BB%84%E5%90%88%E5%AF%84%E7%94%9F%E7%BB%A7%E6%89%BF">组合寄生继承</a></li>
+<li><a href="#%E6%B7%B1%E6%8B%B7%E8%B4%9D">深拷贝</a></li>
+<li><a href="#%E6%95%B0%E7%BB%84%E5%8E%BB%E9%87%8D">数组去重</a></li>
+<li><a href="#%E6%95%B0%E7%BB%84%E4%B9%B1%E5%BA%8F">数组乱序</a></li>
+<li><a href="#%E6%95%B0%E7%BB%84%E9%9A%8F%E6%9C%BA%E6%8E%92%E5%BA%8F">数组随机排序</a></li>
+<li><a href="#%E6%95%B0%E7%BB%84%E6%89%81%E5%B9%B3">数组扁平</a></li>
+<li><a href="#%E6%95%B0%E7%BB%84%E6%8B%86%E8%A7%A3-flat-123-1-2-3">数组拆解: flat: [1,[2,3]] --&gt; [1, 2, 3]</a></li>
+<li><a href="#%E5%88%9B%E5%BB%BA%E4%B8%80%E4%B8%AA%E9%95%BF%E5%BA%A6%E4%B8%BA100%E5%80%BC%E4%B8%BA%E5%AF%B9%E5%BA%94%E4%B8%8B%E6%A0%87%E7%9A%84%E6%95%B0%E7%BB%84">创建一个长度为100，值为对应下标的数组</a></li>
+<li><a href="#%E8%A7%A3%E6%9E%90-url-%E5%8F%82%E6%95%B0%E4%B8%BA%E5%AF%B9%E8%B1%A1">解析 URL 参数为对象</a></li>
+<li><a href="#promise">promise</a></li>
+<li><a href="#%E4%BA%8B%E4%BB%B6%E7%9B%91%E5%90%AC">事件监听</a></li>
+<li><a href="#new%E6%93%8D%E4%BD%9C%E7%AC%A6">new操作符</a></li>
+<li><a href="#%E8%8A%82%E6%B5%81%E5%92%8C%E9%98%B2%E6%8A%96">节流和防抖</a></li>
+<li><a href="#%E6%89%8B%E5%86%99call-apply-bind">手写call、apply、bind</a></li>
+<li><a href="#jsonp">JSONP</a></li>
+<li><a href="#%E8%A7%82%E5%AF%9F%E8%80%85%E6%A8%A1%E5%BC%8F">观察者模式</a></li>
+<li><a href="#eventemitter">EventEmitter</a></li>
+<li><a href="#%E5%A4%A7%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0-%E6%96%AD%E7%82%B9%E7%BB%AD%E4%BC%A0">大文件上传、断点续传</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+
+        
+
+        <div class="site-footer">
+  
+  <a class="rss" href="https://shelter01.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

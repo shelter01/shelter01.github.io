@@ -1,0 +1,291 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>webrtc连线项目（websocket通信） | 谢尔特的小窝</title>
+<link rel="shortcut icon" href="https://shelter01.github.io/favicon.ico?v=1689069773793">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://shelter01.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="webrtc连线项目（websocket通信） | 谢尔特的小窝 - Atom Feed" href="https://shelter01.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="需求：
+
+连线项目基于导播台进行的开发。导播台是一款客户端将主要是音视频的流以某种形式给到服务端后，服务端进行混流与合成。最终，导播台拉取服务端的流进行预览与操作（场景、音量等）。
+基于导播台的概念，可以将客户端的采集设备获取到的音视频流推..." />
+    <meta name="keywords" content="项目记录" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://shelter01.github.io">
+  <img class="avatar" src="https://shelter01.github.io/images/avatar.png?v=1689069773793" alt="">
+  </a>
+  <h1 class="site-title">
+    谢尔特的小窝
+  </h1>
+  <p class="site-description">
+    个人项目和面试题记录
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              webrtc连线项目（websocket通信）
+            </h2>
+            <div class="post-info">
+              <span>
+                2023-04-14
+              </span>
+              <span>
+                5 min read
+              </span>
+              
+                <a href="https://shelter01.github.io/tag/vMKmCWzgl/" class="post-tag">
+                  # 项目记录
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <p>需求：</p>
+<ul>
+<li>连线项目基于<code>导播台</code>进行的开发。导播台是一款客户端将<code>主要是音视频</code>的流以<code>某种形式</code>给到服务端后，服务端进行混流与合成。最终，导播台拉取服务端的流进行<code>预览与操作</code>（场景、音量等）。</li>
+<li>基于导播台的概念，可以将客户端的<code>采集设备</code>获取到的<code>音视频流</code>推送到后端（摄像头、桌面共享等）。</li>
+<li>webrtc连线的项目就是h5<code>将摄像头的流</code>推到服务端，同时可以拉取到导播台的mcu<code>自定义预览流</code>，可以做到<code>实时通讯</code>，类似于腾讯会议的功能。</li>
+</ul>
+<p>重点过程步骤：<br>
+技术栈：基于<code>vue3</code> + <code>pinia</code> + <code>element-plus</code><br>
+获取音视频流：</p>
+<ol>
+<li><code>getUserMedia</code>获取音视频流。</li>
+<li>参数中<code>aspectRatio</code>控制16/9或者9/16的比例。</li>
+<li><code>facingMode</code>控制前后置摄像头，更换前后置时需注意断开流。</li>
+<li><code>deviceId</code>可以获取指定音视频设备的流、切换设备时用。</li>
+</ol>
+<pre><code class="language-js">navigator.mediaDevices.getUserMedia({
+    video: {
+        aspectRatio: 16 / 9,
+        facingMode: 'user',
+        deviceId: ''
+    },
+    audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: false
+    }
+})
+
+stream.getVideoTracks()[0].stop()
+</code></pre>
+<p>创建canvas：</p>
+<ol>
+<li>根据视频的宽高大小、比例创建canvas画布。</li>
+<li><code>captureStream</code>将canvas转为mediaStream。</li>
+<li>mediaStream转换为HTMLVideoElement，作为<code>drawImage</code> 的参数。</li>
+</ol>
+<pre><code class="language-js">const canvas = document.createElement('canvas')
+const context2d = canvas.getContext('2d')
+const canvasToStream = canvas.captureStream(25)
+
+// mediaStream转换为HTMLVideoElement
+const htmlVideo = document.createElement('video')
+htmlVideo.autoplay = true
+htmlVideo.onloadedmetadata = () =&gt; {
+    htmlVideo.muted = true
+}
+htmlVideo.srcObject = stream
+</code></pre>
+<p>canvas画图：</p>
+<ol>
+<li>requestAnimationFrame API在某些设备的兼容性有问题，主线程里后台定时器和requestAnimationFrame都会休眠。所以采用webworker+setTimeout实现canvas的帧绘制。</li>
+<li>镜像问题。ios的微信不适配。（可能是canvas+setTimeout性能问题）</li>
+</ol>
+<pre><code class="language-js">// 移动位置后，坐标位置都会在当前视频的左上角。先到坐标(width, 0)，再相对x=width翻转图片
+canvas.context2d.translate(width, 0)
+canvas.context2d.scale(-1, 1)
+</code></pre>
+<p>WebSocket推流通信：</p>
+<ol>
+<li>连接服务器，在onopen、onmessage、onclose、onerror中定义推流的一些规则（推流时机、交换sdp、断开连接的规则等）。</li>
+<li>发送本地的sdp信息（推流过程见下一步）</li>
+<li>接收服务端传过来的sdp，<code>setRemoteDescription</code>设置远程sdp信息</li>
+</ol>
+<pre><code class="language-js">pc.setRemoteDescription(new RTCSessionDescription(sdp))
+</code></pre>
+<p>WebRTC推流：</p>
+<ol>
+<li><code>RTCPeerConnection</code>创建一个由本地计算机到远端的 WebRTC 连接实例（pc）。</li>
+<li><code>addTrack</code>将音视频轨道添加进pc中。</li>
+<li><code>contHint</code>可以设置一些轨道内容类型、影响传输的策略。</li>
+<li><code>replaceTrack</code>或者<code>removeTrack + addTrack</code>定义替换轨道的方法。例如前后置摄像头（因为视频轨道由canvas合成，因此仅替换音频轨道即可，但切换stream时需更新canvas的视频轨道）。其中很重要的一点是就得mediaStream更换前需将<code>旧stream停止</code>。</li>
+<li><code>createOffer</code>创建一个SDP offer，目的是启动一个新的 WebRTC 去连接远程端点。<code>setLocalDescription</code>将offer设置进本地sdp中，发送给服务端。</li>
+<li>接收到服务端的sdp后<code>setRemoteDescription</code>设置远程sdp。</li>
+<li>一旦SDP的交换和设置完成，WebRTC会自动建立ICE连接（候选地址的协商），并开始传输媒体流。</li>
+</ol>
+<pre><code class="language-js">// peerConnection
+const pc = new RTCPeerConnection()
+stream.getTracks().forEach((track) =&gt; {
+    pc.addTrack(track)
+})
+// local sdp
+const offer = await state.pc.createOffer()
+pc.setLocalDescription(offer)
+// 设置服务端传来的sdp
+pc.setRemoteDescription(sdp)
+</code></pre>
+<p>WebSocket通信，交换消息，等一些业务操作。</p>
+<p>WebSocket拉流：</p>
+<ol>
+<li><code>RTCPeerConnection</code>创建一个由本地计算机到远端的 WebRTC 连接实例（pc）。</li>
+<li>获取播放器dom元素<code>videoElement</code>，在pc的<code>onaddstream</code>或者<code>onaddtrack</code>钩子初始化播放器。</li>
+<li>接收到服务端的sdp后<code>setRemoteDescription</code>设置远程sdp。</li>
+</ol>
+<pre><code class="language-js">const videoElement = document.getElementById(videoId)
+const  pc = new RTCPeerConnection()
+
+pc.onaddstream = (event) =&gt; {
+    videoElement.srcObject = event.stream
+}
+// 设置服务端传来的sdp
+pc.setRemoteDescription(sdp)
+// 设置local sdp
+const answer = pc.createAnswer()
+pc.setLocalDescription(answer)
+</code></pre>
+<p>流处理的一些点：</p>
+<pre><code class="language-js">// 音视频开关（关闭麦克风为例）
+const audioTracks = lcps.stream.getAudioTracks()
+audioTracks.forEach((track) =&gt; {
+    track.enabled = false
+})
+</code></pre>
+<p>翻页以及mcu画面的调节、蒙层的调节、本地视频的调节、音量名称的调整、自动播放的处理、本地视频静音、横屏适配等问题、指挥台mcu音量调节。</p>
+<p><strong>重难点</strong>：</p>
+<ol>
+<li>webrtc推流通信的过程</li>
+<li>canvas的绘制问题、<code>webworker</code>，setTimeout，requestAnimationFrame，setInterval</li>
+<li>facingMode等切换流配置的问题，需要track.stop()</li>
+<li>兼容性问题</li>
+</ol>
+
+              </div>
+              <div class="toc-container">
+                
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://shelter01.github.io/post/tui-liu-xiang-mu-ji-lu/">
+              <h3 class="post-title">
+                web端推流项目
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  
+  <a class="rss" href="https://shelter01.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

@@ -1,0 +1,559 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>vue知识点（面） | 谢尔特的小窝</title>
+<link rel="shortcut icon" href="https://shelter01.github.io/favicon.ico?v=1689069773793">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://shelter01.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="vue知识点（面） | 谢尔特的小窝 - Atom Feed" href="https://shelter01.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="vue的优缺点
+优点：渐进式、组件化、响应式数据
+缺点：seo、首屏渲染、ie8以上
+数据响应式原理
+数据劫持：
+vue2的Object.defineProperty()。
+缺点：
+
+对象新增的属性无效，要通过 Vue 提供的 $set 和..." />
+    <meta name="keywords" content="面试相关" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://shelter01.github.io">
+  <img class="avatar" src="https://shelter01.github.io/images/avatar.png?v=1689069773793" alt="">
+  </a>
+  <h1 class="site-title">
+    谢尔特的小窝
+  </h1>
+  <p class="site-description">
+    个人项目和面试题记录
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              vue知识点（面）
+            </h2>
+            <div class="post-info">
+              <span>
+                2023-03-19
+              </span>
+              <span>
+                11 min read
+              </span>
+              
+                <a href="https://shelter01.github.io/tag/AmodHRYiW/" class="post-tag">
+                  # 面试相关
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h3 id="vue的优缺点">vue的优缺点</h3>
+<p>优点：渐进式、组件化、响应式数据<br>
+缺点：seo、首屏渲染、ie8以上</p>
+<h3 id="数据响应式原理">数据响应式原理</h3>
+<p>数据劫持：<br>
+vue2的Object.defineProperty()。<br>
+缺点：</p>
+<ul>
+<li>对象<code>新增的属性</code>无效，要通过 Vue 提供的 $set 和 $delete 方法设置。</li>
+<li>无法监听<code>数组的下标的变化</code>，但是vue内部重写了push等数组方法。</li>
+<li>不支持map和set等类型的对象<br>
+vue3的proxy解决了上述问题，但也需要深度遍历。</li>
+</ul>
+<p>收集依赖。<br>
+data(){<br>
+count: 1<br>
+}<br>
+基础数据类型：track函数使用Dep（set集合）将count所影响到的effect函数收集起来，<br>
+trigger函数在count改变时通知通知所有的effect更新（循环Dep）。<br>
+对象：每个对象中，用map将对象的key与其专用的Dep关联起来。再执行其余操作。</p>
+<pre><code class="language-js">weakmap存储所有对象：
+(weakmap)-&gt;person(map)-&gt;name(set)-&gt;Dep
+// allMap存储所有obj
+allMap = new WeakMap()
+// objMap存储person的key
+allMap.set('person', objMap = new Map())
+// dep存储name的effect
+objMap.set(name, dep  = new Set())
+</code></pre>
+<p>定义activeEffect在effect执行时触发get自动收集依赖</p>
+<p>数据自动更新<br>
+数据get前，执行track收集依赖（add或update依赖）<br>
+数据set后，执行trigger通知更新</p>
+<h3 id="keep-alive原理">keep-alive原理</h3>
+<p>特点：</p>
+<ol>
+<li>是一个全局组件</li>
+<li>不会被渲染、不会出现在父组件链中</li>
+<li>包裹中的组件会缓存，而不是销毁</li>
+</ol>
+<pre><code class="language-js">&lt;keep-alive :include=&quot;whiteList&quot; :exclude=&quot;blackList&quot; :max=&quot;amount&quot;&gt;
+  &lt;component :is=&quot;currentComponent&quot;&gt;&lt;/component&gt;
+&lt;/keep-alive&gt;
+
+&lt;keep-alive :include=&quot;whiteList&quot; :exclude=&quot;blackList&quot; :max=&quot;amount&quot;&gt;
+  &lt;router-view&gt;&lt;/router-view&gt;
+&lt;/keep-alive&gt;
+</code></pre>
+<p>参数：</p>
+<ol>
+<li>include：传字符串、正则、数组。</li>
+<li>exclude：传字符串、正则、数组。</li>
+<li>max：传数字，限制最大缓存数，超过按LRU（最久未使用）置换。<br>
+在生命周期里做了什么：</li>
+<li>created：初始化cache缓存组件的虚拟dom，初始化keys缓存组件的key。</li>
+<li>mounted：监听include，exclude</li>
+<li>destory：遍历cache，pruneCacheEntry函数销毁、删除缓存<br>
+pruneCacheEntry函数做的操作：执行所有缓存组件的$destroy，当前缓存的value内容置空，删除keys中的元素<br>
+render函数做的事：</li>
+<li>获得keep-alive包裹的第一个组件的组件名称。</li>
+<li>判断此组件名称、不是白名单或者是黑名单，不操作，否则继续。</li>
+<li>根据ID、tag生成缓存key，查找该组件是否缓存。若缓存，则直接取出，并根据LRU更新；若没缓存，则继续。</li>
+<li>将该组件加入到缓存，并踢出LRU最久未使用的。</li>
+<li>将此组件实例的keepAlive属性设置为true。<br>
+渲染：如果组件上abstract为true，就跳过该组件的渲染。</li>
+</ol>
+<h3 id="v-model原理">v-model原理</h3>
+<p>是语法糖</p>
+<pre><code>&lt;el-input v-model=&quot;foo&quot; /&gt;
+&lt;el-input :value=&quot;foo&quot; @input=&quot;foo = $event&quot; /&gt;
+</code></pre>
+<p>组件支持v-model，model可以自定义（在子组件中）。vue3中是modelValue</p>
+<pre><code>export default {
+  model: {
+    prop: 'value', // 可自定义
+    event: 'input' // 可自定义
+  }
+}
+</code></pre>
+<h3 id="自定义指令">自定义指令</h3>
+<p>指令定义函数提供了几个钩子函数（可选）：</p>
+<ul>
+<li>bind: 只调用一次，指令第一次绑定到元素时调用，可以定义一个在绑定时执行一次的初始化动作。</li>
+<li>inserted: 被绑定元素插入父节点时调用（父节点存在即可调用，不必存在于 document 中）。</li>
+<li>update: 被绑定元素所在的模板更新时调用，而不论绑定值是否变化。通过比较更新前后的绑定值。</li>
+<li>componentUpdated: 被绑定元素所在模板完成一次更新周期时调用。</li>
+<li>unbind: 只调用一次， 指令与元素解绑时调用。</li>
+</ul>
+<p>v-copy示例</p>
+<pre><code class="language-js">1.指令内部，copy.js
+const copy = {
+  bind(el, { value }) {
+    el.$value = value
+    el.handler = () =&gt; {
+      if (!el.$value) {
+        // 值为空的时候，给出提示。可根据项目UI仔细设计
+        console.log('无复制内容')
+        return
+      }
+      // 动态创建 textarea 标签
+      const textarea = document.createElement('textarea')
+      // 将该 textarea 设为 readonly 防止 iOS 下自动唤起键盘，同时将 textarea 移出可视区域
+      textarea.readOnly = 'readonly'
+      textarea.style.position = 'absolute'
+      textarea.style.left = '-9999px'
+      // 将要 copy 的值赋给 textarea 标签的 value 属性
+      textarea.value = el.$value
+      // 将 textarea 插入到 body 中
+      document.body.appendChild(textarea)
+      // 选中值并复制
+      textarea.select()
+      const result = document.execCommand('Copy')
+      if (result) {
+        console.log('复制成功') // 可根据项目UI仔细设计
+      }
+      document.body.removeChild(textarea)
+    }
+    // 绑定点击事件，就是所谓的一键 copy 啦
+    el.addEventListener('click', el.handler)
+  },
+  // 当传进来的值更新的时候触发
+  componentUpdated(el, { value }) {
+    el.$value = value
+  },
+  // 指令与元素解绑的时候，移除事件绑定
+  unbind(el) {
+    el.removeEventListener('click', el.handler)
+  },
+}
+export default copy
+
+2. 指令注册，directives/index.js 文件
+import copy from './copy'
+// 自定义指令
+const directives = {
+  copy,
+  longpress,
+}
+
+export default {
+  install(Vue) {
+    Object.keys(directives).forEach((key) =&gt; {
+      Vue.directive(key, directives[key])
+    })
+  },
+}
+
+3. 指令引入
+import Vue from 'vue'
+import Directives from './JS/directives'
+Vue.use(Directives)
+</code></pre>
+<h3 id="父子通信">父子通信</h3>
+<ol>
+<li>props</li>
+<li>$emit</li>
+<li>$ref</li>
+<li>parent/children</li>
+<li>eventBus</li>
+<li>provide/inject</li>
+<li>vuex</li>
+<li>localStorage</li>
+</ol>
+<h3 id="vue和react对比">vue和react对比</h3>
+<p>相同：单项数据流、虚拟dom、ssr、组件化<br>
+不同：jsx和template、数据响应式和setState、事件双向绑定和单项绑定</p>
+<h3 id="data">data</h3>
+<ul>
+<li>data为什么是<code>函数</code>：希望组件复用而不是数据复用，类似闭包的作用。</li>
+<li>获取初始状态：<code>this.$options.data().xxx</code></li>
+<li>不需要响应式的数据：定义在data的return之外，<code>Object.freeze</code></li>
+</ul>
+<h3 id="为什么-watch-中能进行异步操作而-computed-不能">为什么 watch 中能进行异步操作而 computed 不能</h3>
+<h3 id="vue-router以及路由">vue-router以及路由</h3>
+<p>beforeEach：to、from、next<br>
+afterEach：to、from<br>
+路由导航流程：<br>
+简化版：</p>
+<ol>
+<li>离开当前路由 beforeRouteEnter</li>
+<li>全局路由 beforeEach</li>
+<li>去到的路由 beforeRouteEnter</li>
+<li>全局 beforeResolve</li>
+<li>全局 afterEach</li>
+<li>DOM 更新</li>
+<li>调用 beforeRouteEnter 中传入的 next 回调函数</li>
+</ol>
+<h3 id="routerpush-routerreplace-routergo的区别">router.push、router.replace、router.go的区别</h3>
+<ul>
+<li>router.push：跳转，并向history栈中加一个记录，可以后退到上一个页面</li>
+<li>router.replace：跳转，不会向history栈中加一个记录，不可以后退到上一个页面</li>
+<li>router.go：传正数向前跳转，传负数向后跳转</li>
+</ul>
+<h3 id="keep-alive配置">keep-alive配置</h3>
+<ul>
+<li>keep-alive 有 <code>include</code> 和 <code>exclude</code> 属性，这两个属性决定哪些组件可以进入缓存。</li>
+<li>另外还有一个 <code>max</code> 属性，通过它可以设置最大缓存数，当缓存的实例超过设置的数时，vue会移除最久没有使用的组件缓存。</li>
+</ul>
+<h3 id="vuex的属性">vuex的属性</h3>
+<ul>
+<li>state、getter、mutation、action、module</li>
+<li>mapState、mapGetter、mapMutations、mapAction</li>
+</ul>
+<h3 id="虚拟dom和diff算法">虚拟dom和diff算法</h3>
+<p>虚拟dom</p>
+<ul>
+<li>是什么：是一个描述真实dom的对象，数据更新时，新旧虚拟dom都会进行<code>同层比较</code>，<code>diff算法是一种对比算法</code>，就是在此时优化。</li>
+<li>目的：解决<code>频繁</code>操作dom的性能开销</li>
+<li>方案：将真实dom抽象成js对象树，用<code>patch算法</code>计算出<code>需要更新的节点</code>，减少dom操作。</li>
+<li>简化版本：diff算法通过<code>生成操作序列</code>去<code>找出差异</code>，patch根据这个操作序列去<code>更新这些差异</code>。<br>
+diff算法：</li>
+</ul>
+<ol>
+<li>调用patch方法，传入<code>新旧虚拟dom</code>，开始<code>同层对比</code>。</li>
+<li>第二步：调用<code>isSameNode</code>方法，对比<code>新旧节点</code>是否同类型节点（判断依据：标签相同，key相同）。</li>
+<li>如果<code>不同</code>，新节点直接<code>替代</code>旧结点</li>
+<li>如果<code>相同</code>，调用<code>patchNode深度对比</code>节点</li>
+<li>
+<ul>
+<li>如果旧节点和新节点<code>都是文本节点</code>，则新文本<code>代替</code>旧文本（都是文本，新替旧）</li>
+<li>如果旧节点有子节点，新节点没，则删除旧节点的子节点（旧有新无，删旧子节点）</li>
+<li>如果旧节点没有子节点，新节点有，则把子节点新增上去（旧无新有，新增子节点）</li>
+<li>如果都有子节点，则调用 <code>updateChildren</code> 方法进行新旧子节点的对比（都有，diff算法）</li>
+<li>子节点对比为首尾对比法
+<ol>
+<li>旧前 vs 新前</li>
+<li>旧后 vs 新后</li>
+<li>旧前 vs 新后</li>
+<li>旧后 vs 新前</li>
+<li>以上都不满足，遍历查找</li>
+<li>创建 or 删除<br>
+当数据改变时，会触发<code>setter</code>，并且通过<code>Dep.notify</code>去通知所有订阅者Watcher，订阅者们就会调用<code>patch</code>方法，给真实DOM打补丁，更新相应的视图</li>
+</ol>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="性能优化">性能优化</h3>
+<ol>
+<li>
+<p>v-for设置key</p>
+<ul>
+<li>帮助diff算法根据key值做新旧节点的比对</li>
+</ul>
+</li>
+<li>
+<p>模块化、组件化</p>
+<ul>
+<li>封装高复用的模块（http请求）</li>
+<li>组件可配置性强</li>
+</ul>
+</li>
+<li>
+<p>路由懒加载</p>
+</li>
+</ol>
+<pre><code class="language-js">const routes = [
+    {
+        path: '/',
+        name: 'Home',
+        component: Home
+    },
+    {
+        path: '/courses',
+        name: 'Courses',
+        component: () =&gt; import('../views/Courses.vue')
+    }
+]
+</code></pre>
+<ol start="4">
+<li>关闭productionSourceMap，开启productionGzip</li>
+<li>keep-alive</li>
+<li>图片cdn、图片懒加载</li>
+<li><code>骨架屏</code>，loading动画</li>
+<li>编码阶段
+<ul>
+<li>减少data里的数据（减少watcher）或者使用Object.freeze()</li>
+<li>v-if和v-for不要连用，v-for的id</li>
+<li>路由懒加载、异步组件</li>
+<li>防抖、节流</li>
+<li>第三方模块按需引入</li>
+</ul>
+</li>
+<li>搜索引擎seo、预渲染、ssr</li>
+<li>打包优化
+<ul>
+<li>压缩代码</li>
+<li>tree shaking</li>
+<li>cdn第三方模块</li>
+<li>多线程打包</li>
+<li>splitChunks抽离公共文件</li>
+<li>sourceMap优化</li>
+</ul>
+</li>
+</ol>
+<h3 id="vue2和vue3的区别">vue2和vue3的区别</h3>
+<ul>
+<li>options api和composition api。</li>
+<li>reactive原理。
+<ol>
+<li>proxy递归代理</li>
+<li>深度响应</li>
+</ol>
+</li>
+<li>ref和reactive
+<ol>
+<li>ref需要.value，可接收基础和引用数据。</li>
+<li>reactive只能接受引用数据。</li>
+<li>ref底层还是基于reactive做的。</li>
+</ol>
+</li>
+<li>vue3比vue2快的原因
+<ol>
+<li>diff算法。新增了<code>静态标记</code>，能够让虚拟节点识别带有静态标记的节点对比内容进行改变。</li>
+<li>hoistStatic 静态提升。vue2.0中无论元素是否参与更新，都会重新创建，vue3.0中对于<code>不参与更新的元素，只会被创建一次</code>，之后会在每次渲染的时候被不停的复用。</li>
+<li>cacheHandlers<code>事件侦听器缓存</code>。默认情况下onClick会被视为动态绑定，每次都会追踪它的变化，vue3.0中直接进行缓存，复用。</li>
+</ol>
+</li>
+</ul>
+<h3 id="vue3-里为什么要用-proxy-api-替代-defineproperty-api">Vue3 里为什么要用 Proxy API 替代 defineProperty API</h3>
+<p>Vue2中采用 defineProperty来劫持整个对象，然后进行深度遍历所有属性，给每个属性添加 getter 和 setter，实现响应式。<br>
+缺点：</p>
+<ul>
+<li>检测不到对象属性的添加和删除</li>
+<li><code>数组API</code>方法无法监听到/<code>数组下标</code>操作无法监听到</li>
+<li>需要对每个属性进行遍历监听，如果嵌套对象，需要<code>深层监听</code>，造成性能问题</li>
+</ul>
+<p>Vue3 采用的 Proxy 的监听是针对<code>一个对象</code>的，那么对这个对象的所有操作会进入监听操作。</p>
+<ul>
+<li>Object.defineProperty 只能遍历对象属性进行劫持</li>
+<li>Proxy 直接可以劫持整个对象，并返回一个新对象，我们可以<code>只操作新的对象</code>达到响应式目的</li>
+<li>Proxy 可以直接监听<code>数组的变化</code>（push、shift、splice）</li>
+<li>Proxy 有多达<code>13种拦截方法</code>,不限于apply、ownKeys、deleteProperty、has等等，这是Object.defineProperty不具备的</li>
+</ul>
+<h3 id="watcheffect">watchEffect</h3>
+<ul>
+<li><code>watchEffect</code>可以自动监听数据源作为依赖。不用指明监视哪个数据，监视的回调中用到哪个数据，那就监视哪个数据。</li>
+<li><code>watchEffect</code>有点像 <code>computed</code> ：
+<ol>
+<li>但 <code>computed</code> 注重的计算出来的值（回调函数的返回值）， 所以必须要写返回值。</li>
+<li>而 <code>watcheffect</code>注重的是过程（回调函数的函数体），所以不用写返回值。</li>
+</ol>
+</li>
+</ul>
+<h2 id="vue3-中v-if-和-v-for-的优先级哪个高">Vue3 中，<strong><strong>v-if 和 v-for 的优先级哪个高？</strong></strong></h2>
+<p>在 <code>vue2</code> 中 <code>v-for</code> 的优先级更高，但是在 <code>vue3</code> 中优先级改变了。<code>v-if</code> 的优先级更高。</p>
+<h3 id="script-setup-是什么有什么好处">script setup 是什么，有什么好处?</h3>
+<ul>
+<li>3.2版本之后出现的语法糖</li>
+<li>写法简单，无需export暴露函数、引入组件会<code>自动注册</code>、<code>defineEmits</code>、<code>defineExpose</code>、<code>defineProps</code>。</li>
+</ul>
+<h3 id="pinia的一些优点">pinia的一些优点</h3>
+<ol>
+<li>有多个store。</li>
+<li>只有state、actions、getters。</li>
+<li>支持composition api语法。</li>
+<li>支持ts。</li>
+</ol>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#vue%E7%9A%84%E4%BC%98%E7%BC%BA%E7%82%B9">vue的优缺点</a></li>
+<li><a href="#%E6%95%B0%E6%8D%AE%E5%93%8D%E5%BA%94%E5%BC%8F%E5%8E%9F%E7%90%86">数据响应式原理</a></li>
+<li><a href="#keep-alive%E5%8E%9F%E7%90%86">keep-alive原理</a></li>
+<li><a href="#v-model%E5%8E%9F%E7%90%86">v-model原理</a></li>
+<li><a href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8C%87%E4%BB%A4">自定义指令</a></li>
+<li><a href="#%E7%88%B6%E5%AD%90%E9%80%9A%E4%BF%A1">父子通信</a></li>
+<li><a href="#vue%E5%92%8Creact%E5%AF%B9%E6%AF%94">vue和react对比</a></li>
+<li><a href="#data">data</a></li>
+<li><a href="#%E4%B8%BA%E4%BB%80%E4%B9%88-watch-%E4%B8%AD%E8%83%BD%E8%BF%9B%E8%A1%8C%E5%BC%82%E6%AD%A5%E6%93%8D%E4%BD%9C%E8%80%8C-computed-%E4%B8%8D%E8%83%BD">为什么 watch 中能进行异步操作而 computed 不能</a></li>
+<li><a href="#vue-router%E4%BB%A5%E5%8F%8A%E8%B7%AF%E7%94%B1">vue-router以及路由</a></li>
+<li><a href="#routerpush-routerreplace-routergo%E7%9A%84%E5%8C%BA%E5%88%AB">router.push、router.replace、router.go的区别</a></li>
+<li><a href="#keep-alive%E9%85%8D%E7%BD%AE">keep-alive配置</a></li>
+<li><a href="#vuex%E7%9A%84%E5%B1%9E%E6%80%A7">vuex的属性</a></li>
+<li><a href="#%E8%99%9A%E6%8B%9Fdom%E5%92%8Cdiff%E7%AE%97%E6%B3%95">虚拟dom和diff算法</a></li>
+<li><a href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96">性能优化</a></li>
+<li><a href="#vue2%E5%92%8Cvue3%E7%9A%84%E5%8C%BA%E5%88%AB">vue2和vue3的区别</a></li>
+<li><a href="#vue3-%E9%87%8C%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E7%94%A8-proxy-api-%E6%9B%BF%E4%BB%A3-defineproperty-api">Vue3 里为什么要用 Proxy API 替代 defineProperty API</a></li>
+<li><a href="#watcheffect">watchEffect</a></li>
+</ul>
+</li>
+<li><a href="#vue3-%E4%B8%ADv-if-%E5%92%8C-v-for-%E7%9A%84%E4%BC%98%E5%85%88%E7%BA%A7%E5%93%AA%E4%B8%AA%E9%AB%98">Vue3 中，<strong><strong>v-if 和 v-for 的优先级哪个高？</strong></strong></a>
+<ul>
+<li><a href="#script-setup-%E6%98%AF%E4%BB%80%E4%B9%88%E6%9C%89%E4%BB%80%E4%B9%88%E5%A5%BD%E5%A4%84">script setup 是什么，有什么好处?</a></li>
+<li><a href="#pinia%E7%9A%84%E4%B8%80%E4%BA%9B%E4%BC%98%E7%82%B9">pinia的一些优点</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+
+        
+
+        <div class="site-footer">
+  
+  <a class="rss" href="https://shelter01.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

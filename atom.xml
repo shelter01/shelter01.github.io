@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://shelter01.github.io</id>
+    <title>谢尔特的小窝</title>
+    <updated>2023-07-11T10:02:56.780Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://shelter01.github.io"/>
+    <link rel="self" href="https://shelter01.github.io/atom.xml"/>
+    <subtitle>个人项目和面试题记录</subtitle>
+    <logo>https://shelter01.github.io/images/avatar.png</logo>
+    <icon>https://shelter01.github.io/favicon.ico</icon>
+    <rights>All rights reserved 2023, 谢尔特的小窝</rights>
+    <entry>
+        <title type="html"><![CDATA[音视频知识点（笔）]]></title>
+        <id>https://shelter01.github.io/post/webrtc-xue-xi-bi-ji/</id>
+        <link href="https://shelter01.github.io/post/webrtc-xue-xi-bi-ji/">
+        </link>
+        <updated>2023-05-21T09:08:20.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="rtmp直播是单向的webrtc是双向的">rtmp直播是单向的，webrtc是双向的</h3>
+<p>媒体协商：是指在建立 WebRTC 连接时，对要传输的媒体流进行协商和约定的过程。</p>
+<ol>
+<li>sdp交换：SDP 包含媒体流的参数、编解码器配置等信息</li>
+<li>ice协商：确定对等连接的网络地址和传输路径<br>
+网络协商：媒体协商之后，建立数据通道时对网络传输参数进行协商和优化的过程。</li>
+<li>STUN：设备向 STUN 服务器发送请求，服务器会返回设备所使用的公网地址和端口信息。</li>
+<li>TURN:  当设备无法直接通信时，它可以将数据发送到 TURN 服务器，然后由 TURN 服务器转发给目标设备。TURN 服务器充当中继，使得设备可以绕过防火墙和 NAT。</li>
+</ol>
+<h3 id="多方通信的架构">多方通信的架构</h3>
+<p>mcu：各端发送到服务器混流。<br>
+sfu：服务器只负责转发，客户端接收到多路流。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[webrtc连线项目（websocket通信）]]></title>
+        <id>https://shelter01.github.io/post/webrtc-lian-xian-xiang-mu/</id>
+        <link href="https://shelter01.github.io/post/webrtc-lian-xian-xiang-mu/">
+        </link>
+        <updated>2023-04-14T02:03:47.000Z</updated>
+        <content type="html"><![CDATA[<p>需求：</p>
+<ul>
+<li>连线项目基于<code>导播台</code>进行的开发。导播台是一款客户端将<code>主要是音视频</code>的流以<code>某种形式</code>给到服务端后，服务端进行混流与合成。最终，导播台拉取服务端的流进行<code>预览与操作</code>（场景、音量等）。</li>
+<li>基于导播台的概念，可以将客户端的<code>采集设备</code>获取到的<code>音视频流</code>推送到后端（摄像头、桌面共享等）。</li>
+<li>webrtc连线的项目就是h5<code>将摄像头的流</code>推到服务端，同时可以拉取到导播台的mcu<code>自定义预览流</code>，可以做到<code>实时通讯</code>，类似于腾讯会议的功能。</li>
+</ul>
+<p>重点过程步骤：<br>
+技术栈：基于<code>vue3</code> + <code>pinia</code> + <code>element-plus</code><br>
+获取音视频流：</p>
+<ol>
+<li><code>getUserMedia</code>获取音视频流。</li>
+<li>参数中<code>aspectRatio</code>控制16/9或者9/16的比例。</li>
+<li><code>facingMode</code>控制前后置摄像头，更换前后置时需注意断开流。</li>
+<li><code>deviceId</code>可以获取指定音视频设备的流、切换设备时用。</li>
+</ol>
+<pre><code class="language-js">navigator.mediaDevices.getUserMedia({
+    video: {
+        aspectRatio: 16 / 9,
+        facingMode: 'user',
+        deviceId: ''
+    },
+    audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: false
+    }
+})
+
+stream.getVideoTracks()[0].stop()
+</code></pre>
+<p>创建canvas：</p>
+<ol>
+<li>根据视频的宽高大小、比例创建canvas画布。</li>
+<li><code>captureStream</code>将canvas转为mediaStream。</li>
+<li>mediaStream转换为HTMLVideoElement，作为<code>drawImage</code> 的参数。</li>
+</ol>
+<pre><code class="language-js">const canvas = document.createElement('canvas')
+const context2d = canvas.getContext('2d')
+const canvasToStream = canvas.captureStream(25)
+
+// mediaStream转换为HTMLVideoElement
+const htmlVideo = document.createElement('video')
+htmlVideo.autoplay = true
+htmlVideo.onloadedmetadata = () =&gt; {
+    htmlVideo.muted = true
+}
+htmlVideo.srcObject = stream
+</code></pre>
+<p>canvas画图：</p>
+<ol>
+<li>requestAnimationFrame API在某些设备的兼容性有问题，主线程里后台定时器和requestAnimationFrame都会休眠。所以采用webworker+setTimeout实现canvas的帧绘制。</li>
+<li>镜像问题。ios的微信不适配。（可能是canvas+setTimeout性能问题）</li>
+</ol>
+<pre><code class="language-js">// 移动位置后，坐标位置都会在当前视频的左上角。先到坐标(width, 0)，再相对x=width翻转图片
+canvas.context2d.translate(width, 0)
+canvas.context2d.scale(-1, 1)
+</code></pre>
+<p>WebSocket推流通信：</p>
+<ol>
+<li>连接服务器，在onopen、onmessage、onclose、onerror中定义推流的一些规则（推流时机、交换sdp、断开连接的规则等）。</li>
+<li>发送本地的sdp信息（推流过程见下一步）</li>
+<li>接收服务端传过来的sdp，<code>setRemoteDescription</code>设置远程sdp信息</li>
+</ol>
+<pre><code class="language-js">pc.setRemoteDescription(new RTCSessionDescription(sdp))
+</code></pre>
+<p>WebRTC推流：</p>
+<ol>
+<li><code>RTCPeerConnection</code>创建一个由本地计算机到远端的 WebRTC 连接实例（pc）。</li>
+<li><code>addTrack</code>将音视频轨道添加进pc中。</li>
+<li><code>contHint</code>可以设置一些轨道内容类型、影响传输的策略。</li>
+<li><code>replaceTrack</code>或者<code>removeTrack + addTrack</code>定义替换轨道的方法。例如前后置摄像头（因为视频轨道由canvas合成，因此仅替换音频轨道即可，但切换stream时需更新canvas的视频轨道）。其中很重要的一点是就得mediaStream更换前需将<code>旧stream停止</code>。</li>
+<li><code>createOffer</code>创建一个SDP offer，目的是启动一个新的 WebRTC 去连接远程端点。<code>setLocalDescription</code>将offer设置进本地sdp中，发送给服务端。</li>
+<li>接收到服务端的sdp后<code>setRemoteDescription</code>设置远程sdp。</li>
+<li>一旦SDP的交换和设置完成，WebRTC会自动建立ICE连接（候选地址的协商），并开始传输媒体流。</li>
+</ol>
+<pre><code class="language-js">// peerConnection
+const pc = new RTCPeerConnection()
+stream.getTracks().forEach((track) =&gt; {
+    pc.addTrack(track)
+})
+// local sdp
+const offer = await state.pc.createOffer()
+pc.setLocalDescription(offer)
+// 设置服务端传来的sdp
+pc.setRemoteDescription(sdp)
+</code></pre>
+<p>WebSocket通信，交换消息，等一些业务操作。</p>
+<p>WebSocket拉流：</p>
+<ol>
+<li><code>RTCPeerConnection</code>创建一个由本地计算机到远端的 WebRTC 连接实例（pc）。</li>
+<li>获取播放器dom元素<code>videoElement</code>，在pc的<code>onaddstream</code>或者<code>onaddtrack</code>钩子初始化播放器。</li>
+<li>接收到服务端的sdp后<code>setRemoteDescription</code>设置远程sdp。</li>
+</ol>
+<pre><code class="language-js">const videoElement = document.getElementById(videoId)
+const  pc = new RTCPeerConnection()
+
+pc.onaddstream = (event) =&gt; {
+    videoElement.srcObject = event.stream
+}
+// 设置服务端传来的sdp
+pc.setRemoteDescription(sdp)
+// 设置local sdp
+const answer = pc.createAnswer()
+pc.setLocalDescription(answer)
+</code></pre>
+<p>流处理的一些点：</p>
+<pre><code class="language-js">// 音视频开关（关闭麦克风为例）
+const audioTracks = lcps.stream.getAudioTracks()
+audioTracks.forEach((track) =&gt; {
+    track.enabled = false
+})
+</code></pre>
+<p>翻页以及mcu画面的调节、蒙层的调节、本地视频的调节、音量名称的调整、自动播放的处理、本地视频静音、横屏适配等问题、指挥台mcu音量调节。</p>
+<p><strong>重难点</strong>：</p>
+<ol>
+<li>webrtc推流通信的过程</li>
+<li>canvas的绘制问题、<code>webworker</code>，setTimeout，requestAnimationFrame，setInterval</li>
+<li>facingMode等切换流配置的问题，需要track.stop()</li>
+<li>兼容性问题</li>
+</ol>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[web端推流项目]]></title>
+        <id>https://shelter01.github.io/post/tui-liu-xiang-mu-ji-lu/</id>
+        <link href="https://shelter01.github.io/post/tui-liu-xiang-mu-ji-lu/">
+        </link>
+        <updated>2023-03-12T16:43:11.000Z</updated>
+        <content type="html"><![CDATA[<p>业务需求：前端获取并合成摄像头与屏幕共享的流，webrtc推到后端。</p>
+<h3 id="1canvas合成画面">1.canvas合成画面</h3>
+<p>通过getUserMedia采集摄像头与麦克风的流、getDisplayMedia采集屏幕共享的流。并将其拆分成四个track（拆分主要是为了合成音频流、合成视频流需要的是stream）</p>
+<pre><code class="language-js">const stream = await navigator.mediaDevices.getUserMedia(constraints)
+stream.getVideoTracks()[0] // 摄像头轨道
+stream.getAudioTracks()[0] // 麦克风轨道
+
+const stream = navigator.mediaDevices.getDisplayMedia(constraints)
+stream.getVideoTracks()[0] // 屏幕共享视频轨道
+stream.getAudioTracks()[0] // 屏幕共享音频轨道
+</code></pre>
+<p>由于canvas合成流需要HTMLVideoElement，需要做转换。要将video设置为静音、否则会有回声。</p>
+<pre><code class="language-js">// canvas合成视频需要将MediaStream转HTMLVideoElement
+const getVideoElementWithStream = (stream: MediaStream) =&gt; {
+  const video = document.createElement('video')
+  video.autoplay = true
+  // 静音避免回声
+  video.onloadedmetadata = () =&gt; {
+    video.muted = true
+  }
+  video.playsInline = true
+  video.srcObject = stream
+  return video
+}
+</code></pre>
+<p>动态创建canvas、设置宽高，获取content2d实例</p>
+<pre><code class="language-js">constructor(resolution: string) {
+    this.canvas = document.createElement('canvas')
+
+    // 720与1080分辨率动态改变宽高
+    const _rst = RESOLUTION_TYPE.filter((v) =&gt; v.value === resolution)[0]
+    this.canvas.width = _rst.w
+    this.canvas.height = _rst.h
+    this._context2d = this.canvas.getContext('2d')
+  }
+</code></pre>
+<p>canvas合成视频的frame</p>
+<pre><code class="language-js">private _toEachFrameOfCanvas() {
+    this._context2d.drawImage(
+          this._cameraVideo as HTMLVideoElement,
+          _layout.left,
+          _layout.top,
+          _layout.width,
+          _layout.height
+        )
+    this._context2d.drawImage(
+            this._screenVideo as HTMLVideoElement,
+            _layout.left,
+            _layout.top,
+            _layout.width,
+            _layout.height
+          )
+}
+</code></pre>
+<p>requestAnimationFrame以浏览器刷新的频率绘制视频，不过这个方法会在浏览器处于后台的时候休眠，找到的解决办法有两个。</p>
+<pre><code class="language-js">// 1.web worker去触发requestAnimationFrame
+initWorker() {
+    const fn = () =&gt; {
+      if (this._dataWorker) {
+        this.closeDataWorker()
+      }
+      // 接收消息
+      self.onmessage = (e) =&gt; {
+        if (e.data.type === 'start') {
+          startAnimation()
+        }
+      }
+
+      const startAnimation = () =&gt; {
+        requestAnimationFrame(loop)
+      }
+
+      const loop = () =&gt; {
+        self.postMessage({
+          type: 'loop'
+        })
+        // 主线程后台会休眠
+        requestAnimationFrame(loop)
+      }
+    }
+
+    const blob = new Blob(['(' + fn.toString() + ')()'])
+    const url = window.URL.createObjectURL(blob)
+    this._dataWorker = new Worker(url)
+
+    this._dataWorker.postMessage({
+      type: 'start'
+    })
+    this._dataWorker.onmessage = (e) =&gt; {
+      this._animationFrameHandler()
+    }
+}
+
+// 2.electron，变成了桌面端工具，未采用
+mainWindow.webContents.setBackgroundThrottling(false) // 保持后台不休眠
+</code></pre>
+<h3 id="2webrtc推流">2.webrtc推流</h3>
+<p>创建实例</p>
+<pre><code class="language-js">this._pc = new RTCPeerConnection()
+</code></pre>
+<p>添加track（添加之前需要将之前零散的track合成为stream）</p>
+<pre><code class="language-js">stream.getTracks().forEach((track) =&gt; {
+      if (track.kind === 'video') {
+        this._pc.addTransceiver(track, {
+          // 仅为推流端
+          direction: 'sendonly'
+        })
+      } else if (track.kind === 'audio') {
+        this._pc.addTransceiver(track, {
+          direction: 'sendonly'
+        })
+      }
+})
+</code></pre>
+<p>创建一个SDP offer、offer.sdp为本地sdp</p>
+<pre><code class="language-js">const offer = await this._pc.createOffer()
+await this._pc.setLocalDescription(offer)
+</code></pre>
+<p>与将offer.sdp传给服务端，交换信息后获得最终的sdp。</p>
+<pre><code class="language-js">await this._pc.setRemoteDescription(
+    new RTCSessionDescription({
+        type: 'answer',
+        // 修复AnswerSdp中的顺序问题，不重要
+        sdp: this._convertAnswerSdp(offer.sdp, session.sdp)
+    })
+)
+</code></pre>
+]]></content>
+    </entry>
+</feed>

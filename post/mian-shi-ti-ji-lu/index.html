@@ -1,0 +1,499 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>js知识点（面） | 谢尔特的小窝</title>
+<link rel="shortcut icon" href="https://shelter01.github.io/favicon.ico?v=1689069773793">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://shelter01.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="js知识点（面） | 谢尔特的小窝 - Atom Feed" href="https://shelter01.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="数据类型
+简单类型：null、undefined、boolean、number、string、symbol、bigint（5+2）
+复杂类型：Object
+区分的方法：
+
+typeof
+
+
+基础类型：typeof 42(&quot;numb..." />
+    <meta name="keywords" content="面试相关" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://shelter01.github.io">
+  <img class="avatar" src="https://shelter01.github.io/images/avatar.png?v=1689069773793" alt="">
+  </a>
+  <h1 class="site-title">
+    谢尔特的小窝
+  </h1>
+  <p class="site-description">
+    个人项目和面试题记录
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              js知识点（面）
+            </h2>
+            <div class="post-info">
+              <span>
+                2023-03-13
+              </span>
+              <span>
+                9 min read
+              </span>
+              
+                <a href="https://shelter01.github.io/tag/AmodHRYiW/" class="post-tag">
+                  # 面试相关
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h3 id="数据类型">数据类型</h3>
+<p>简单类型：null、undefined、boolean、number、string、symbol、bigint（5+2）<br>
+复杂类型：Object</p>
+<p>区分的方法：</p>
+<ol>
+<li>typeof</li>
+</ol>
+<ul>
+<li>基础类型：typeof 42(&quot;number&quot;)</li>
+<li>注意：typeof null(&quot;object&quot;)</li>
+<li>复杂类型：(&quot;object&quot;/&quot;function&quot;)</li>
+</ul>
+<ol start="2">
+<li>instanceof</li>
+</ol>
+<ul>
+<li>判断简单类型false</li>
+<li>复杂类型检查是否为 构造函数 的 实例</li>
+</ul>
+<ol start="3">
+<li>Object.prototype.toString.call</li>
+</ol>
+<ul>
+<li>基础类型：&quot;[object Number]&quot;</li>
+<li>引用类型：&quot;[object Date]&quot;</li>
+<li>内置类型：&quot;[object Error]&quot;</li>
+</ul>
+<h3 id="类型转换">类型转换</h3>
+<ol>
+<li>转boolean：除了undefinded、null、false、NaN、''、0、-0，其他所有值都转为true</li>
+<li>转</li>
+</ol>
+<h3 id="let-const和var区别">let const和var区别</h3>
+<ol>
+<li>var没有块级作用域，let、const有。let有暂时性死区。</li>
+<li>var有变量提升，可以先使用后声明。</li>
+</ol>
+<h3 id="原型和原型链">原型和原型链</h3>
+<ol>
+<li>原型：值为对象。构造函数的prototype，实例对象的__proto__。</li>
+<li>原型链：原型链是 沿着实例对象的原型__proto__<code>不断往上查找的链条</code>。</li>
+<li>当访问对象的属性或方法时，如果对象本身没有定义该属性或方法，JavaScript 引擎会沿着原型链向上查找，直到找到对应的属性或方法或者达到原型链的顶端（null）为止。这样实现了属性和方法的继承。</li>
+<li>构造函数与原型之间的访问方式：prototype、constructor</li>
+</ol>
+<pre><code class="language-js">获取原型的方法：
+1. p.__proto__
+2. p.constructor.prototype
+3. Object.getPrototypeOf(p)
+</code></pre>
+<h3 id="作用域链">作用域链</h3>
+<ol>
+<li>作用域链是<code>管理变量访问</code>的机制。</li>
+<li>函数执行时，会创建一个新的作用域，作为函数的执行环境。函数当前的作用域和他<code>所有的父级作用域</code>形成了作用域链。函数<code>被定义时</code>决定了作用域链的链接结构和访问顺序。</li>
+<li>当访问一个变量时，js引擎会首先在当前作用域中查找该变量，如果找不到则沿着作用域链向上查找，直到找到该变量或达到全局作用域。</li>
+</ol>
+<h3 id="闭包">闭包</h3>
+<p>闭包是指有权<code>访问另外一个函数作用域</code>中的变量的函数<br>
+作用：</p>
+<ol>
+<li>缓存数据</li>
+<li>避免全局污染<br>
+缺点：内存泄漏、作用域链不释放</li>
+</ol>
+<h3 id="this指向">this指向</h3>
+<ol>
+<li>函数执行，没点window，有点是点前面的</li>
+<li>构造函数指向实例</li>
+<li>当前元素事件绑方法，方法中this指向当前元素</li>
+<li>箭头函数没有this，上下文获取</li>
+<li>call/apply/bind改变</li>
+</ol>
+<h3 id="执行上下文">执行上下文</h3>
+<p>执行上下文用于描述代码在运行时的环境和条件。</p>
+<p>每个上下文都有三个重要组件<br>
+1.变量对象（V0）：存储变量、函数声明个函数参数。<br>
+2.作用域链（词法作用域）：当前执行上下文的变量对象和父级上下文变量对象组成的链式结构。<br>
+3.this指向：指定当前函数的执行环境。</p>
+<p>有三种上下文：<br>
+1.全局执行上下文：代码开始执行的时候创建，可以访问全局变量和函数，是所有其他执行上下文的父级。<br>
+2.函数执行上下文：在函数调用时创建，可以访问函数内部以及父级上下文的变量和函数。<br>
+3.eval执行上下文</p>
+<h3 id="event-loop">event loop</h3>
+<p>事件循环是js异步执行基础机制。</p>
+<p>宏任务：定时器函数、事件回调函数、script加载、io操作等等<br>
+微任务：promise.then、MutationObserver、queueMicrotask</p>
+<p>事件循环的过程：<br>
+1.js 是单线程的，代码执行时，将不同函数的执行上下文有序的压入执行栈中。<br>
+2.在同步代码执行时，碰到异步事件，将这个事件挂起，继续执行执行栈中的同步任务。<br>
+3.当同步事件执行完毕后，再将异步事件对应的回调加入到与当前执行栈中不同的另一个任务队列中等待执行。<br>
+4.任务队列有两个，当执行栈为空时，去微任务队列找，若有，逐个执行。<br>
+5.当微任务对列中的任务都执行完成后再去判断宏任务对列中的任务。</p>
+<h3 id="node-event-loop">node event loop</h3>
+<h3 id="for-in和for-of">for in和for of</h3>
+<p>1.for in遍历对象（key）的除symbol以外的可枚举属性，包括继承的（包括原型链，可用hasOwnProperty去筛选）。（遍历数组可能不是按照顺序）<br>
+2.for of遍历所有部署了interator的（value）</p>
+<h3 id="浏览器兼容性">浏览器兼容性</h3>
+<pre><code class="language-js"></code></pre>
+<h3 id="解决跨域">解决跨域</h3>
+<pre><code>三大要素：域名、端口、协议
+1.JSONP：动态创建script，因script标签可跨域加载js。但只支持get请求，且无法处理错误。
+2.CORS：跨域资源共享。在服务器设置响应头，允许当前域名的js获取跨域资源。Access-Control-Allow-Origin:*
+3.iframe：iframe标签。
+4.websocket：协议本身可以发送跨域请求。
+5.后端代理：在当前域名创建一个服务器，将需要请求的资源发送到代理服务器上，再转发。
+</code></pre>
+<h3 id="模块化规范待扩充">模块化规范（待扩充）</h3>
+<pre><code>1.CommonJS：
+2.AMD
+3.CMD
+4.ES6
+</code></pre>
+<h3 id="错误捕获">错误捕获</h3>
+<pre><code>1.try catch。一般配合async await可捕获rejected信息
+2.promise.rejected。try catch捕获不到
+3.window.onerror
+</code></pre>
+<h3 id="script加载机制">script加载机制</h3>
+<figure data-type="image" tabindex="1"><img src="https://shelter01.github.io/post-images/1680227567184.png" alt="" loading="lazy"></figure>
+<pre><code>1.普通script顺序执行
+2.defer延迟执行脚本，立即下载，html解析完后顺序执行。适用相互依赖的脚本。
+3.async异步加载和执行脚本，立即下载，立即执行，且不能保证顺序。不适用相互依赖的脚本。
+4.动态加载多个 script，执行顺序不能保证。用promise或者callback保证顺序。
+</code></pre>
+<h3 id="proxy和reflect">proxy和reflect</h3>
+<pre><code>
+</code></pre>
+<h3 id="正则相关">正则相关</h3>
+<h3 id="asyncawaitgenerator">async/await/generator</h3>
+<p>async/await:</p>
+<pre><code>1.await只能在async函数里
+2.async函数返回promise，没有return返回undefined
+3.await后面最好接promise
+4.主要作用是用同步的方式，执行异步操作
+</code></pre>
+<p>generator</p>
+<ul>
+<li>接值<br>
+yield暂停点。next继续走。value是yield后面的值。done是generator是否走完。</li>
+</ul>
+<pre><code class="language-js">function* gen() {
+  yield 1
+  yield 2
+}
+const g = gen()
+console.log(g.next()) // { value: 1, done: false }
+console.log(g.next()) // { value: 2, done: false }
+console.log(g.next()) // { value: undefined, done: true } 取决于gen的有没有返回值
+</code></pre>
+<ul>
+<li>接函数<br>
+到达yield时，会立马执行函数，函数返回值作为value</li>
+</ul>
+<pre><code class="language-js">function fn(num) {
+  console.log(num)
+  return num
+}
+function* gen() {
+  yield fn(1)
+  yield fn(2)
+  return 3
+}
+const g = gen()
+console.log(g.next()) 
+// 1
+// { value: 1, done: false }
+console.log(g.next())
+// 2
+//  { value: 2, done: false }
+console.log(g.next()) 
+// { value: 3, done: true }
+</code></pre>
+<ul>
+<li>接promise</li>
+</ul>
+<pre><code class="language-js">function fn(num) {
+  return new Promise(resolve =&gt; {
+    setTimeout(() =&gt; {
+      resolve(num)
+    }, 1000)
+  })
+}
+function* gen() {
+  yield fn(1)
+  yield fn(2)
+  return 3
+}
+const g = gen()
+const next1 = g.next()
+next1.value.then(res1 =&gt; {
+  console.log(next1) // 1秒后输出 { value: Promise { 1 }, done: false }
+  console.log(res1) // 1秒后输出 1
+
+  const next2 = g.next()
+  next2.value.then(res2 =&gt; {
+    console.log(next2) // 2秒后输出 { value: Promise { 2 }, done: false }
+    console.log(res2) // 2秒后输出 2
+    console.log(g.next()) // 2秒后输出 { value: 3, done: true }
+  })
+})
+</code></pre>
+<ul>
+<li>next函数传参</li>
+</ul>
+<ol>
+<li>第一次next传参是没用的，只有从第二次开始next传参才有用</li>
+<li>next传值时，要记住顺序是，先右边yield，后左边接收参数</li>
+</ol>
+<pre><code class="language-js">function* gen() {
+  const num1 = yield 1
+  console.log(num1)
+  const num2 = yield 2
+  console.log(num2)
+  return 3
+}
+const g = gen()
+console.log(g.next()) // { value: 1, done: false }
+console.log(g.next(11111))
+// 11111
+//  { value: 2, done: false }
+console.log(g.next(22222)) 
+// 22222
+// { value: 3, done: true }
+</code></pre>
+<ul>
+<li>promise+next传参</li>
+</ul>
+<pre><code class="language-js">function fn(nums) {
+  return new Promise(resolve =&gt; {
+    setTimeout(() =&gt; {
+      resolve(nums * 2)
+    }, 1000)
+  })
+}
+function* gen() {
+  const num1 = yield fn(1)
+  const num2 = yield fn(num1)
+  const num3 = yield fn(num2)
+  return num3
+}
+const g = gen()
+const next1 = g.next()
+next1.value.then(res1 =&gt; {
+  console.log(next1) // 1秒后同时输出 { value: Promise { 2 }, done: false }
+  console.log(res1) // 1秒后同时输出 2
+
+  const next2 = g.next(res1) // 传入上次的res1
+  next2.value.then(res2 =&gt; {
+    console.log(next2) // 2秒后同时输出 { value: Promise { 4 }, done: false }
+    console.log(res2) // 2秒后同时输出 4
+
+    const next3 = g.next(res2) // 传入上次的res2
+    next3.value.then(res3 =&gt; {
+      console.log(next3) // 3秒后同时输出 { value: Promise { 8 }, done: false }
+      console.log(res3) // 3秒后同时输出 8
+
+       // 传入上次的res3
+      console.log(g.next(res3)) // 3秒后同时输出 { value: 8, done: true }
+    })
+  })
+})
+</code></pre>
+<ul>
+<li>完整代码（封装后输入和返回值都是函数）</li>
+</ul>
+<pre><code class="language-js">function generatorToAsync(generatorFn) {
+  return function() {
+    const gen = generatorFn.apply(this, arguments) // gen有可能传参
+
+    // 返回一个Promise
+    return new Promise((resolve, reject) =&gt; {
+
+      function go(key, arg) {
+        let res
+        try {
+          res = gen[key](arg) // 这里有可能会执行返回reject状态的Promise
+        } catch (error) {
+          return reject(error) // 报错的话会走catch，直接reject
+        }
+
+        // 解构获得value和done
+        const { value, done } = res
+        if (done) {
+          // 如果done为true，说明走完了，进行resolve(value)
+          return resolve(value)
+        } else {
+          // 如果done为false，说明没走完，还得继续走
+
+          // value有可能是：常量，Promise，Promise有可能是成功或者失败
+          return Promise.resolve(value).then(val =&gt; go('next', val), err =&gt; go('throw', err))
+        }
+      }
+
+      go(&quot;next&quot;) // 第一次执行
+    })
+  }
+}
+
+const asyncFn = generatorToAsync(gen)
+
+asyncFn().then(res =&gt; console.log(res))
+</code></pre>
+<h3 id="模块化">模块化</h3>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B">数据类型</a></li>
+<li><a href="#%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2">类型转换</a></li>
+<li><a href="#let-const%E5%92%8Cvar%E5%8C%BA%E5%88%AB">let const和var区别</a></li>
+<li><a href="#%E5%8E%9F%E5%9E%8B%E5%92%8C%E5%8E%9F%E5%9E%8B%E9%93%BE">原型和原型链</a></li>
+<li><a href="#%E4%BD%9C%E7%94%A8%E5%9F%9F%E9%93%BE">作用域链</a></li>
+<li><a href="#%E9%97%AD%E5%8C%85">闭包</a></li>
+<li><a href="#this%E6%8C%87%E5%90%91">this指向</a></li>
+<li><a href="#%E6%89%A7%E8%A1%8C%E4%B8%8A%E4%B8%8B%E6%96%87">执行上下文</a></li>
+<li><a href="#event-loop">event loop</a></li>
+<li><a href="#node-event-loop">node event loop</a></li>
+<li><a href="#for-in%E5%92%8Cfor-of">for in和for of</a></li>
+<li><a href="#%E6%B5%8F%E8%A7%88%E5%99%A8%E5%85%BC%E5%AE%B9%E6%80%A7">浏览器兼容性</a></li>
+<li><a href="#%E8%A7%A3%E5%86%B3%E8%B7%A8%E5%9F%9F">解决跨域</a></li>
+<li><a href="#%E6%A8%A1%E5%9D%97%E5%8C%96%E8%A7%84%E8%8C%83%E5%BE%85%E6%89%A9%E5%85%85">模块化规范（待扩充）</a></li>
+<li><a href="#%E9%94%99%E8%AF%AF%E6%8D%95%E8%8E%B7">错误捕获</a></li>
+<li><a href="#script%E5%8A%A0%E8%BD%BD%E6%9C%BA%E5%88%B6">script加载机制</a></li>
+<li><a href="#proxy%E5%92%8Creflect">proxy和reflect</a></li>
+<li><a href="#%E6%AD%A3%E5%88%99%E7%9B%B8%E5%85%B3">正则相关</a></li>
+<li><a href="#asyncawaitgenerator">async/await/generator</a></li>
+<li><a href="#%E6%A8%A1%E5%9D%97%E5%8C%96">模块化</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+
+        
+
+        <div class="site-footer">
+  
+  <a class="rss" href="https://shelter01.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
