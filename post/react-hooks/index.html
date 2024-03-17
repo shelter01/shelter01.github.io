@@ -1,0 +1,197 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>react | 谢尔特的小窝</title>
+<link rel="shortcut icon" href="https://shelter01.github.io/favicon.ico?v=1710687923650">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://shelter01.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="react | 谢尔特的小窝 - Atom Feed" href="https://shelter01.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="hooks
+useState()
+const  [count, setCount] =  useState()
+
+useEffect()
+
+不传递，在每次渲染都会执行
+传[]，在组件挂载和卸载时执行
+返回一个清理函数，用于组件卸载或下一次执..." />
+    <meta name="keywords" content="面试相关" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://shelter01.github.io">
+  <img class="avatar" src="https://shelter01.github.io/images/avatar.png?v=1710687923650" alt="">
+  </a>
+  <h1 class="site-title">
+    谢尔特的小窝
+  </h1>
+  <p class="site-description">
+    个人项目和面试题记录
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              react
+            </h2>
+            <div class="post-info">
+              <span>
+                2023-08-22
+              </span>
+              <span>
+                1 min read
+              </span>
+              
+                <a href="https://shelter01.github.io/tag/AmodHRYiW/" class="post-tag">
+                  # 面试相关
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h3 id="hooks">hooks</h3>
+<p><strong>useState</strong>()</p>
+<pre><code class="language-js">const  [count, setCount] =  useState()
+</code></pre>
+<p><strong>useEffect</strong>()</p>
+<ul>
+<li>不传递，在每次渲染都会执行</li>
+<li>传[]，在组件挂载和卸载时执行</li>
+<li>返回一个清理函数，用于组件卸载或下一次执行前的清理</li>
+</ul>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#hooks">hooks</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://shelter01.github.io/post/ts-bi-ji/">
+              <h3 class="post-title">
+                typescript（笔记）&lt;阮一峰&gt;
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  
+  <a class="rss" href="https://shelter01.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

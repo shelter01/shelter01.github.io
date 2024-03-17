@@ -1,0 +1,452 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>typescript（笔记）&lt;阮一峰&gt; | 谢尔特的小窝</title>
+<link rel="shortcut icon" href="https://shelter01.github.io/favicon.ico?v=1710687923650">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://shelter01.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="typescript（笔记）&lt;阮一峰&gt; | 谢尔特的小窝 - Atom Feed" href="https://shelter01.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="三种特殊类型
+
+any：相当于关闭了类型检查。全集
+
+
+用于适配老项目或特殊原因
+赋值给别人会污染
+
+
+unknown：为了解决any的赋值污染。全集
+
+
+不能直接赋值给其他变量
+不能直接调用unknown类型变量的方法和属性
+能够进行的运..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://shelter01.github.io">
+  <img class="avatar" src="https://shelter01.github.io/images/avatar.png?v=1710687923650" alt="">
+  </a>
+  <h1 class="site-title">
+    谢尔特的小窝
+  </h1>
+  <p class="site-description">
+    个人项目和面试题记录
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              typescript（笔记）&lt;阮一峰&gt;
+            </h2>
+            <div class="post-info">
+              <span>
+                2023-08-14
+              </span>
+              <span>
+                7 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h3 id="三种特殊类型">三种特殊类型</h3>
+<ol>
+<li>any：相当于关闭了类型检查。<code>全集</code></li>
+</ol>
+<ul>
+<li>用于<code>适配</code>老项目或特殊原因</li>
+<li>赋值给别人会<code>污染</code></li>
+</ul>
+<ol start="2">
+<li>unknown：为了解决any的赋值<code>污染</code>。<code>全集</code></li>
+</ol>
+<ul>
+<li>不能直接赋值给其他变量</li>
+<li>不能直接调用unknown类型变量的方法和属性</li>
+<li>能够进行的运算有限，只能进行比较运算、取反运算、typeof运算符和instanceof运算符<br>
+使用时配合<code>类型缩小</code></li>
+</ul>
+<pre><code class="language-ts">let a:unknown = 1;
+if (typeof a === 'number') {
+  let b = a + 10; // 不会报错
+}
+</code></pre>
+<ol start="3">
+<li>never：无法被再次赋值。<code>空集</code></li>
+</ol>
+<ul>
+<li>可以赋值给任意类型</li>
+</ul>
+<h3 id="基本类型">基本类型</h3>
+<p>boolean、string、number、bigint、symbol、object、undefined、null<br>
+联合类型也可以使用<code>类型缩小</code></p>
+<pre><code class="language-ts">function printId(
+  id:number|string
+) {
+  if (typeof id === 'string') {
+    console.log(id.toUpperCase());
+  } else {
+    console.log(id);
+  }
+}
+</code></pre>
+<p>交叉类型常常用来为对象类型<code>添加新属性</code>。</p>
+<pre><code class="language-ts">type A = { foo: number };
+type B = A &amp; { bar: number };
+</code></pre>
+<p>typeof操作符：有些场合<code>不知道</code>某个变量foo的<code>类型</code>，这时使用typeof foo就可以获得它的类型。</p>
+<pre><code class="language-ts">const a = { x: 0 };
+type T0 = typeof a;   // { x: number }
+type T1 = typeof a.x; // number
+</code></pre>
+<h3 id="数组">数组</h3>
+<pre><code class="language-ts">let arr:number[] = [1, 2, 3];
+let arr:(number|string)[];
+
+// 内置的 Array 接口
+let arr:Array&lt;number&gt; = [1, 2, 3];
+
+// TypeScript 允许声明只读数组，方法是在数组类型前面加上readonly关键字。
+const arr:readonly number[] = [0, 1]; 
+arr[1] = 2; // 报错
+arr.push(3); // 报错
+delete arr[0]; // 报错
+
+// readonly关键字不能与数组的泛型写法一起使用
+const arr:readonly Array&lt;number&gt; = [0, 1]; // 报错
+// TypeScript 提供了两个专门的泛型，用来生成只读数组的类型。（注意写法不一样）
+const a1:ReadonlyArray&lt;number&gt; = [0, 1]; // 成员类型
+const a2:Readonly&lt;number[]&gt; = [0, 1]; // 完整类型
+</code></pre>
+<h3 id="元组">元组</h3>
+<p>成员类型可以自由设置的数组</p>
+<pre><code class="language-ts">// 元组必须明确声明每个成员的类型
+const s:[string, string, boolean] = ['a', 'b', true]
+</code></pre>
+<p>元组成员的类型可以添加问号后缀（?），表示该成员是可选的。且只能放数组的末尾</p>
+<pre><code class="language-ts">let a:[number, number?] = [1];
+</code></pre>
+<p>元组可以通过方括号，读取成员类型。</p>
+<pre><code class="language-ts">type Tuple = [string, number];
+type Age = Tuple[1]; // number
+</code></pre>
+<p>只读元组</p>
+<pre><code class="language-ts">// 写法一
+type t = readonly [number, string]
+// 写法二
+type t = Readonly&lt;[number, string]&gt;
+</code></pre>
+<h3 id="对象">对象</h3>
+<p>可选属性，需要判断是否为<code>undefined</code>以后</p>
+<pre><code class="language-ts">const user:{
+  firstName: string;
+  lastName?: string;
+} = { firstName: 'Foo'};
+
+// 写法一
+let firstName = (user.firstName === undefined)
+  ? 'Foo' : user.firstName;
+let lastName = (user.lastName === undefined)
+  ? 'Bar' : user.lastName;
+// 写法二（??，当左侧的操作数为 null 或者 undefined 时，返回其右侧操作数，否则返回左侧操作数）
+let firstName = user.firstName ?? 'Foo';
+let lastName = user.lastName ?? 'Bar';
+</code></pre>
+<p>属性名索引（key有<code>三种</code>类型：number、string、symbol）、谨慎使用</p>
+<pre><code class="language-ts">type MyObj = {
+  [property: string]: string
+}
+</code></pre>
+<p>需要分步声明，可以使用扩展运算符（...）合成一个新对象。</p>
+<pre><code class="language-ts">const pt0 = {};
+const pt1 = { x: 3 };
+const pt2 = { y: 4 };
+
+const pt = {
+  ...pt0, ...pt1, ...pt2
+};
+</code></pre>
+<h3 id="接口">接口</h3>
+<p>interface 允许<code>多重继承</code>。也可以<code>继承type、class</code></p>
+<pre><code class="language-ts">interface Style {
+  color: string;
+}
+interface Shape {
+  name: string;
+}
+// 有三个属性
+interface Circle extends Style, Shape {
+  radius: number;
+}
+</code></pre>
+<p>多个接口同名会合并</p>
+<pre><code class="language-ts">interface Box {
+  height: number;
+  width: number;
+}
+// 合并为三个属性
+interface Box {
+  length: number;
+}
+</code></pre>
+<p>interface和type的<code>异同</code></p>
+<ol>
+<li><code>type</code>能够表示非对象类型，而<code>interface</code>只能表示对象类型（包括数组、函数等）</li>
+<li><code>interface</code>可以继承其他类型，<code>type</code>不支持继承。（type添加属性用&amp;，type 和 interface可以相互继承）</li>
+<li>同名<code>interface</code>会自动合并，同名<code>type</code>则会报错</li>
+<li><code>type</code>可以扩展原始数据类型，<code>interface</code>不行</li>
+<li><code>interface</code>不能包含属性映射（mapping），<code>type</code>可以</li>
+<li><code>interface</code>无法表达某些复杂类型（比如交叉类型和联合类型），但是<code>type</code>可以</li>
+</ol>
+<h3 id="类">类</h3>
+<p>类的属性可以在顶层声明</p>
+<pre><code>class Point {
+  x:number;
+  y:number;
+}
+</code></pre>
+<p>结构类型原则<br>
+结构相同的类、接口、对象可以共用。兼容时，只检查实例成员，不考虑静态成员和构造方法。</p>
+<pre><code class="language-ts">class Point {
+  x: number;
+  y: number;
+  static t: number; // 不检查
+  constructor(x:number) {}
+}
+
+class Position {
+  x: number;
+  y: number;
+  z: number;
+  constructor(x:string) {}
+}
+
+const point:Point = new Position('');
+</code></pre>
+<p>abstract抽象类只能当作基类使用，直接新建抽象类的实例，会报错。</p>
+<ol>
+<li>抽象成员只能存在于抽象类，不能存在于普通类。</li>
+<li>抽象成员不能有具体实现的代码。也就是说，已经实现好的成员前面不能加abstract关键字。</li>
+<li>抽象成员前也不能有private修饰符，否则无法在子类中实现该成员。</li>
+<li>一个子类最多只能继承一个抽象类。</li>
+</ol>
+<h3 id="泛型">泛型</h3>
+<p>函数的泛型写法</p>
+<pre><code class="language-ts">function id&lt;T&gt;(arg:T):T {
+  return arg;
+}
+
+/* 变量形式定义的函数 */
+// 写法一
+let myId:&lt;T&gt;(arg:T) =&gt; T = id;
+// 写法二
+let myId:{ &lt;T&gt;(arg:T): T } = id;
+</code></pre>
+<p>接口的泛型写法</p>
+<pre><code class="language-ts">interface Box&lt;Type&gt; {
+  contents: Type;
+}
+let box:Box&lt;string&gt;;
+</code></pre>
+<p>类的泛型写法</p>
+<pre><code class="language-ts">class Pair&lt;K, V&gt; {
+  key: K;
+  value: V;
+}
+// 继承泛型类，要写成any
+class A&lt;T&gt; {
+  value: T;
+}
+class B extends A&lt;any&gt; {
+}
+</code></pre>
+<h3 id="enum枚举类型常量放在一个容器">enum枚举类型（常量放在一个容器）</h3>
+<p>既是类型，又是值（谨慎使用，编译后会产生一个对象）</p>
+<pre><code class="language-ts">// 第一个成员默认为0，第二个为1
+enum Color {
+  Red,     // 0
+  Green,   // 1
+  Blue     // 2
+}
+let c = Color.Green; // 1
+// 等同于
+let c = Color['Green']; // 1
+
+let c:Color = Color.Green; // 正确
+let c:number = Color.Green; // 正确
+
+/* 编译后留在代码中 */
+// 编译前
+enum Color {
+  Red,     // 0
+  Green,   // 1
+  Blue     // 2
+}
+
+// 编译后
+let Color = {
+  Red: 0,
+  Green: 1,
+  Blue: 2
+};
+</code></pre>
+<p>成员的值可以是任意数值，但不能是大整数（Bigint）。</p>
+<pre><code class="language-ts">// 除了数值和字符串，Enum 成员不允许使用其他值（比如 Symbol 值）。
+enum Color {
+  Red = 90,
+  Green = 0.5,
+  Blue = 7n // 报错
+}
+</code></pre>
+<h3 id="tsconfigjson">tsconfig.json</h3>
+<pre><code class="language-js">noImplicitAny：推断出any就会报错
+target：支持es版本的语法版本
+strictNullChecks：赋值为undefined的变量会被推断为undefined类型，赋值为null的变量会被推断为null类型，`而不是any`。
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#%E4%B8%89%E7%A7%8D%E7%89%B9%E6%AE%8A%E7%B1%BB%E5%9E%8B">三种特殊类型</a></li>
+<li><a href="#%E5%9F%BA%E6%9C%AC%E7%B1%BB%E5%9E%8B">基本类型</a></li>
+<li><a href="#%E6%95%B0%E7%BB%84">数组</a></li>
+<li><a href="#%E5%85%83%E7%BB%84">元组</a></li>
+<li><a href="#%E5%AF%B9%E8%B1%A1">对象</a></li>
+<li><a href="#%E6%8E%A5%E5%8F%A3">接口</a></li>
+<li><a href="#%E7%B1%BB">类</a></li>
+<li><a href="#%E6%B3%9B%E5%9E%8B">泛型</a></li>
+<li><a href="#enum%E6%9E%9A%E4%B8%BE%E7%B1%BB%E5%9E%8B%E5%B8%B8%E9%87%8F%E6%94%BE%E5%9C%A8%E4%B8%80%E4%B8%AA%E5%AE%B9%E5%99%A8">enum枚举类型（常量放在一个容器）</a></li>
+<li><a href="#tsconfigjson">tsconfig.json</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://shelter01.github.io/post/yun-wei/">
+              <h3 class="post-title">
+                运维笔记（狂神等）
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  
+  <a class="rss" href="https://shelter01.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

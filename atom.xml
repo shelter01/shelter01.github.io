@@ -1,0 +1,1406 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+    <id>https://shelter01.github.io</id>
+    <title>谢尔特的小窝</title>
+    <updated>2024-03-17T15:05:26.302Z</updated>
+    <generator>https://github.com/jpmonette/feed</generator>
+    <link rel="alternate" href="https://shelter01.github.io"/>
+    <link rel="self" href="https://shelter01.github.io/atom.xml"/>
+    <subtitle>个人项目和面试题记录</subtitle>
+    <logo>https://shelter01.github.io/images/avatar.png</logo>
+    <icon>https://shelter01.github.io/favicon.ico</icon>
+    <rights>All rights reserved 2024, 谢尔特的小窝</rights>
+    <entry>
+        <title type="html"><![CDATA[性能优化]]></title>
+        <id>https://shelter01.github.io/post/xing-neng-you-hua/</id>
+        <link href="https://shelter01.github.io/post/xing-neng-you-hua/">
+        </link>
+        <updated>2024-03-01T02:29:53.000Z</updated>
+        <content type="html"><![CDATA[<blockquote>
+<p>从输入url到页面加载完成，发生了什么</p>
+</blockquote>
+<ol>
+<li>DNS 解析</li>
+<li>TCP 连接</li>
+<li>HTTP 请求抛出</li>
+<li>服务端处理请求，HTTP 响应返回</li>
+<li>浏览器拿到响应数据，解析响应内容，把解析的结果展示给用户</li>
+</ol>
+<h3 id="网络层面">网络层面</h3>
+<p>DNS解析、TCP连接（前端很难影响）</p>
+<p><code>HTTP请求/响应</code>方向</p>
+<ul>
+<li>减少请求次数</li>
+<li>减少单次请求花费的时间</li>
+</ul>
+<p>webpack的优化方案：<br>
+<strong>构建提速策略</strong></p>
+<ol>
+<li>babel用include和exclude避免不需要的转译（<code>重点</code>）</li>
+</ol>
+<pre><code class="language-js">// 开启缓存转译结果，提速
+loader: 'babel-loader?cacheDirectory=true'
+</code></pre>
+<ol start="2">
+<li>处理第三方库，DllPlugin避免重复打包</li>
+</ol>
+<pre><code class="language-js">new webpack.DllPlugin({
+    // DllPlugin的name属性需要和libary保持一致
+    name: '[name]_[hash]',
+    path: path.join(__dirname, 'dist', '[name]-manifest.json'),
+    // context需要和webpack.config.js保持一致
+    context: __dirname,
+}),
+</code></pre>
+<ol start="3">
+<li>Happypack开启loader的多线程，提升打包效率（<code>重点</code>）</li>
+</ol>
+<pre><code class="language-js">// 手动创建进程池
+const happyThreadPool =  HappyPack.ThreadPool({ size: os.cpus().length })
+new HappyPack({
+    id: 'happyBabel',
+    // 指定进程池
+    threadPool: happyThreadPool,
+    loaders: ['babel-loader?cacheDirectory']
+})
+</code></pre>
+<p><strong>压缩构建结果体积</strong></p>
+<ol>
+<li>文件结构可视化BundleAnalyzerPlugin</li>
+</ol>
+<pre><code class="language-js">const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+module.exports = {
+  plugins: [
+    new BundleAnalyzerPlugin()
+  ]
+}
+</code></pre>
+<ol start="2">
+<li>拆分资源DllPlugin</li>
+<li>删除冗余代码Tree-Shaking（<code>重点</code>）</li>
+<li>按需加载（vue3动态组件、动态路由等）</li>
+</ol>
+<p><strong>开启gzip压缩</strong>（<code>重点</code>）<br>
+在<code>http request header</code>中加上</p>
+<pre><code class="language-js">accept-encoding:gzip
+</code></pre>
+<h3 id="渲染层面">渲染层面</h3>
+<p><strong>图片优化</strong>（<code>重点</code>）</p>
+<ul>
+<li>jpg有损、体积不算大，用在<code>大背景</code></li>
+<li>png无损、体积大，用在<code>小的logo</code></li>
+<li>svg体积小、不失真，用在<code>小图标</code></li>
+</ul>
+<p><strong>浏览器缓存</strong><br>
+减少网络 IO 消耗，提高访问速度</p>
+<ol>
+<li>http缓存（<code>重点</code>）</li>
+</ol>
+<p>强缓存：</p>
+<blockquote>
+<p>命中后<code>不会</code>与服务器通信。命中后<code>返回200</code>。<br>
+Expires：绝对<code>服务器</code>时间戳。<br>
+Cache-Control：max-age相对时间，<code>客户端</code>决定秒数，<code>优先级更高</code>。</p>
+</blockquote>
+<p>协商缓存：</p>
+<blockquote>
+<p><code>依赖</code>服务端与浏览器之间的通信。命中后<code>返回304</code>。<br>
+Last-Modified：服务器返回时间戳，后面请求时会通过If-Modified-Since带上这个时间戳，服务器会对比资源的<code>最后修改</code>时间。若已修改会带上<code>新的时间戳</code>，未修改返回304并且<code>不会</code>带上字段。<br>
+Last-Modified没有正确感知文件变化。<br>
+Etag：生成唯一<code>标识字符串</code>。if-None-Match步骤同上。<br>
+Etag需要服务器生成字符串的开销，是弊端。算是Last-Modified的强化，<code>优先级更高</code></p>
+</blockquote>
+<ol start="2">
+<li>
+<p>MemoryCache<br>
+内存缓存效率最快，浏览器最先尝试命中，但tab关闭后就没了。<br>
+例如：base64格式的图片，体积不大的js和css。</p>
+</li>
+<li>
+<p>Service Worker Cache<br>
+主线程之外的js线程，脱离浏览器窗体，因此<code>无法直接访问dom</code>。可以实现离线缓存、消息推送、网络代理等。</p>
+</li>
+</ol>
+<p><strong>本地存储和CND缓存</strong><br>
+过量的cookie会带来巨大的<code>性能浪费</code>，cookie跟着<code>域名</code>走，请求每个文件都会携带<br>
+CDN用来存放<code>静态资源</code>，根服务器用来生成<code>动态页面或返回非纯静态页面</code>。<br>
+例如认证信息放在不同的域名，这样静态资源就不用<code>携带用不到的cookie</code>（CDN）（<code>重点</code>）</p>
+<p><strong>服务端渲染</strong><br>
+HTML渲染DOM树、CSS渲染CSSOM树，<code>并行渲染</code>、结合得到渲染树、计算布局、绘制渲染。</p>
+<p><strong>浏览器加载文件优化</strong><br>
+css样式表优化、css是<code>从右到左</code>匹配</p>
+<ul>
+<li>避免通配符</li>
+<li>少用标签选择器、多用类选择器（<code>重点</code>）</li>
+<li>减少嵌套</li>
+</ul>
+<p>js加载</p>
+<ul>
+<li>当脚本与 DOM 元素和其它脚本之间的依赖关系不强时，可选用 async。（<code>重点</code>）</li>
+<li>当脚本依赖于 DOM 元素和其它脚本的执行结果时，可选用 defer。（<code>重点</code>）</li>
+</ul>
+<p><strong>DOM渲染优化</strong></p>
+<ul>
+<li>减少操作DOM，可用DOM Fragment先拼装后挂载</li>
+<li>缓存变量</li>
+</ul>
+<p><strong>Event Loop</strong></p>
+<ul>
+<li>宏任务出队时，任务是<code>一个一个</code>执行的。微任务出队时，任务是<code>一队一队</code>执行的。（执行完宏任务都会把微任务清空）</li>
+<li>更新DOM的节点使用微任务</li>
+</ul>
+<p><strong>回流和重绘</strong></p>
+<ul>
+<li>缓存变量，避免多次操作DOM（<code>重点</code>）</li>
+<li>类名合并样式等</li>
+<li>DOM离线</li>
+</ul>
+<p><strong>Lazy-Load</strong>（<code>重点</code>）<br>
+随着进入可视界面，background由<code>none</code>转变<code>真实图片</code>。转变前<code>data-src</code>存图片地址。</p>
+<pre><code class="language-js">imgs[i].src = imgs[i].getAttribute('data-src')
+</code></pre>
+<p>但scroll触发会很频繁，需要节流和防抖<code>↓</code></p>
+<p><strong>节流与防抖</strong>（<code>重点</code>）<br>
+Throttle：第一个人说了算。</p>
+<ul>
+<li>定义计时器，开始执行时<code>记录startTime</code>，再次执行时计算<code>时间差</code>，<code>大于设定时间差</code>再执行，<code>更新startTime</code><br>
+Debounce：最后一个人说了算。</li>
+<li>定义计时器<code>n秒后</code>执行，若n秒内再次触发，<code>清除</code>计时器，再次<code>重新计时</code></li>
+</ul>
+<p><strong>可视化监测</strong></p>
+<ul>
+<li>Performance面板</li>
+<li>LightHouse扩展</li>
+</ul>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[nuxt]]></title>
+        <id>https://shelter01.github.io/post/nuxt/</id>
+        <link href="https://shelter01.github.io/post/nuxt/">
+        </link>
+        <updated>2024-01-24T03:10:32.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="ssr原理">ssr原理</h3>
+<ul>
+<li>CSR和SSR最大的区别在于前者的页面渲染是JS负责进行的，而后者是服务器端直接返回HTML让浏览器直接渲染。</li>
+</ul>
+<p>csr的劣势：</p>
+<ol>
+<li>要拉取js文件和执行，<code>首屏加载慢</code></li>
+<li>没有能力<code>seo</code></li>
+</ol>
+<p>同构：一套代码在服务器上运行一遍，到达浏览器又运行一遍。服务端渲染完成页面结构，浏览器端渲染完成事件绑定。<br>
+同构的条件：路由、视图、数据</p>
+<p><code>构建服务端代码</code><br>
+规则：不编译css、运行环境是cjs、不需要切割代码</p>
+<pre><code class="language-js">const nodeExternals = require(&quot;webpack-node-externals&quot;);
+const VueSSRServerPlugin = require('vue-server-renderer/server-plugin')
+
+module.exports = {
+    css: {
+        extract: false // 不提取 CSS
+    },
+    configureWebpack: () =&gt; ({
+        entry: `./src/server-entry.js`, // 服务器入口文件
+        devtool: 'source-map',
+        target: 'node', // 构建目标为nodejs环境
+        output: {
+            libraryTarget: 'commonjs2' // 构建目标加载模式 commonjs
+        },
+        // 跳过 node_mdoules，运行时会自动加载，不需要编译
+        externals: nodeExternals({
+            allowlist: [/\.css$/] // 允许css文件，方便css module
+        }),
+        optimization: {
+            splitChunks: false // 关闭代码切割
+        },
+      	plugins: [
+            new VueSSRServerPlugin()
+        ]
+    })
+};
+</code></pre>
+<p><code>构建客户端代码</code><br>
+服务端拼接了html文件 -&gt; 加载哪些js由服务端决定 -&gt; 客户端需要知道加载哪些js和css（插件提供）</p>
+<pre><code class="language-js">const VueSSRClientPlugin = require('vue-server-renderer/client-plugin')
+
+module.exports = {
+    configureWebpack: () =&gt; ({
+        entry: `./src/client-entry.js`,
+        devtool: 'source-map',
+        target: 'web',
+        plugins: [
+            // 清单，根据其渲染js和css
+            new VueSSRClientPlugin()
+        ]
+    }),
+    chainWebpack: config =&gt; {
+      	// 去除所有关于客户端生成的html配置，因为已经交给后端生成
+        config.plugins.delete('html');
+        config.plugins.delete('preload');
+        config.plugins.delete('prefetch');
+    }
+};
+</code></pre>
+<p>vue.config.js根据不同的环境加载<code>不同的配置</code></p>
+<pre><code class="language-js">// vue.config.js
+const TARGET_NODE = process.env.WEBPACK_TARGET === 'node';
+const serverConfig = require('./vue.server.config');
+const clientConfig = require('./vue.client.config');
+
+if (TARGET_NODE) {
+    module.exports = serverConfig;
+} else {
+    module.exports = clientConfig;
+}
+</code></pre>
+<p>cross-env<code>区分环境</code>打包</p>
+<pre><code class="language-json">{
+  &quot;scripts&quot;: {
+    &quot;server&quot;: &quot;babel-node src/server.js&quot;,
+    &quot;serve&quot;: &quot;vue-cli-service serve&quot;,
+    &quot;build&quot;: &quot;vue-cli-service build&quot;,
+    &quot;build:server&quot;: &quot;cross-env WEBPACK_TARGET=node vue-cli-service build --mode server&quot;
+  }
+}
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[小程序]]></title>
+        <id>https://shelter01.github.io/post/xiao-cheng-xu/</id>
+        <link href="https://shelter01.github.io/post/xiao-cheng-xu/">
+        </link>
+        <updated>2023-12-11T14:31:18.000Z</updated>
+        <content type="html"><![CDATA[<p>历史：</p>
+<ul>
+<li>原生使用webview调用h5，h5可以用WeixinJSBridge调用原生的方法</li>
+<li>​JS-SDK是对WeixinJSBridge的封装，但没有解决类似首屏白屏的问题</li>
+<li>逻辑层和渲染层<code>分开</code>，逻辑层运行在JSCore中，拿不到完整的浏览器对象，<code>缺少相关的DOM和BOM API</code>。</li>
+<li>三大运行环境：ios、Android、开发者工具</li>
+</ul>
+<p>双线程渲染（wxml/wxss + json/js），两个都是开启单独的webview，<code>每个页面都会开启一个webview</code>。两个线程进行交互的时候需要通过微信的native。微信基于webview，webview只有单线程。<br>
+Skyline通过gpu，更高效</p>
+<p>vue同义转换：</p>
+<pre><code class="language-js">text -&gt; span：user-select可以被选中
+view -&gt; div
+block -&gt; template
+image -&gt; img
+// button按钮是块级元素，size=&quot;mini&quot;后变为行内元素
+
+循环：&lt;view wx:for=&quot;{{ data }}&quot; wx:key=&quot;item.id&quot;&gt;{{ item }}-{{ index }}&lt;/view&gt;
+判断：wx:if/wx:elif/wx:else  &lt;view wx:if=&quot;{{ is }}&quot;&gt;&lt;/view&gt;
+
+bindtap -&gt; @click
+
+this.setData({
+    counter: this.data.counter + 1
+})
+</code></pre>
+<p>rpx：根据屏幕宽度进行自适应，规定屏幕宽750rpx（不用vw/rem了），设计稿750不变，375需要*2</p>
+<p>常用currentTarget，触发事件的元素</p>
+<p>传数据用data-*，类似computed用wxs</p>
+<pre><code class="language-js">// 动态class
+&lt;view class=&quot;aa {{ 'bb' }}&quot;&gt;&lt;/view&gt;
+
+bind:tap冒泡
+capture-bind:tap捕获
+capture-catch:tap停止捕获
+尽量用currentTarget去获取data-的数据
+</code></pre>
+<p>组件的设置：json文件里的<code>component</code>设置为true，并在原页面json添加<code>useingComponents</code><br>
+组件不能用标签选择器、id选择器、属性选择器。外部的id选择器、属性选择器和class不会对组件影响，但<code>标签选择器会影响到组件</code></p>
+<pre><code class="language-js">Components({
+    options: {
+        // 默认isolated：隔离，apply-shared组件可被页面class影响，shared可相互影响
+        styleIsolation: &quot;isolated&quot;
+    }
+})
+</code></pre>
+<h3 id="组件通信">组件通信</h3>
+<p>页面 -&gt; 组件：properties（prop）、externalClasses（传class，用得少）、slot<br>
+组件 -&gt; 页面：自定义事件triggerEvent（emit）</p>
+<p>slot（类似于ref）：this.selectComponent(&quot;.class&quot;)拿到元素，class是组件的class</p>
+<p>slot中不支持默认值，可以用:empty + 兄弟选择器实现</p>
+<pre><code class="language-css">.default {
+    display: none;
+}
+.content:empty + .default {
+    dispaly: block;
+}
+</code></pre>
+<p>开启多插槽需要在当前js文件中开启multipleSolts设置为true</p>
+<p>behaviors -&gt; mixins</p>
+<p>组件的生命周期</p>
+<pre><code class="language-js">Components({
+    lifetimes: {
+        created() {},
+        attached() {}.
+        detached() {}
+    }
+})
+</code></pre>
+<p>代码里请求的域名需要配置：后台 -&gt; 开发管理 -&gt; 开发设置 -&gt; 服务器域名</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[react]]></title>
+        <id>https://shelter01.github.io/post/react-hooks/</id>
+        <link href="https://shelter01.github.io/post/react-hooks/">
+        </link>
+        <updated>2023-08-22T07:28:08.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="hooks">hooks</h3>
+<p><strong>useState</strong>()</p>
+<pre><code class="language-js">const  [count, setCount] =  useState()
+</code></pre>
+<p><strong>useEffect</strong>()</p>
+<ul>
+<li>不传递，在每次渲染都会执行</li>
+<li>传[]，在组件挂载和卸载时执行</li>
+<li>返回一个清理函数，用于组件卸载或下一次执行前的清理</li>
+</ul>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[typescript（笔记）<阮一峰>]]></title>
+        <id>https://shelter01.github.io/post/ts-bi-ji/</id>
+        <link href="https://shelter01.github.io/post/ts-bi-ji/">
+        </link>
+        <updated>2023-08-14T01:01:04.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="三种特殊类型">三种特殊类型</h3>
+<ol>
+<li>any：相当于关闭了类型检查。<code>全集</code></li>
+</ol>
+<ul>
+<li>用于<code>适配</code>老项目或特殊原因</li>
+<li>赋值给别人会<code>污染</code></li>
+</ul>
+<ol start="2">
+<li>unknown：为了解决any的赋值<code>污染</code>。<code>全集</code></li>
+</ol>
+<ul>
+<li>不能直接赋值给其他变量</li>
+<li>不能直接调用unknown类型变量的方法和属性</li>
+<li>能够进行的运算有限，只能进行比较运算、取反运算、typeof运算符和instanceof运算符<br>
+使用时配合<code>类型缩小</code></li>
+</ul>
+<pre><code class="language-ts">let a:unknown = 1;
+if (typeof a === 'number') {
+  let b = a + 10; // 不会报错
+}
+</code></pre>
+<ol start="3">
+<li>never：无法被再次赋值。<code>空集</code></li>
+</ol>
+<ul>
+<li>可以赋值给任意类型</li>
+</ul>
+<h3 id="基本类型">基本类型</h3>
+<p>boolean、string、number、bigint、symbol、object、undefined、null<br>
+联合类型也可以使用<code>类型缩小</code></p>
+<pre><code class="language-ts">function printId(
+  id:number|string
+) {
+  if (typeof id === 'string') {
+    console.log(id.toUpperCase());
+  } else {
+    console.log(id);
+  }
+}
+</code></pre>
+<p>交叉类型常常用来为对象类型<code>添加新属性</code>。</p>
+<pre><code class="language-ts">type A = { foo: number };
+type B = A &amp; { bar: number };
+</code></pre>
+<p>typeof操作符：有些场合<code>不知道</code>某个变量foo的<code>类型</code>，这时使用typeof foo就可以获得它的类型。</p>
+<pre><code class="language-ts">const a = { x: 0 };
+type T0 = typeof a;   // { x: number }
+type T1 = typeof a.x; // number
+</code></pre>
+<h3 id="数组">数组</h3>
+<pre><code class="language-ts">let arr:number[] = [1, 2, 3];
+let arr:(number|string)[];
+
+// 内置的 Array 接口
+let arr:Array&lt;number&gt; = [1, 2, 3];
+
+// TypeScript 允许声明只读数组，方法是在数组类型前面加上readonly关键字。
+const arr:readonly number[] = [0, 1]; 
+arr[1] = 2; // 报错
+arr.push(3); // 报错
+delete arr[0]; // 报错
+
+// readonly关键字不能与数组的泛型写法一起使用
+const arr:readonly Array&lt;number&gt; = [0, 1]; // 报错
+// TypeScript 提供了两个专门的泛型，用来生成只读数组的类型。（注意写法不一样）
+const a1:ReadonlyArray&lt;number&gt; = [0, 1]; // 成员类型
+const a2:Readonly&lt;number[]&gt; = [0, 1]; // 完整类型
+</code></pre>
+<h3 id="元组">元组</h3>
+<p>成员类型可以自由设置的数组</p>
+<pre><code class="language-ts">// 元组必须明确声明每个成员的类型
+const s:[string, string, boolean] = ['a', 'b', true]
+</code></pre>
+<p>元组成员的类型可以添加问号后缀（?），表示该成员是可选的。且只能放数组的末尾</p>
+<pre><code class="language-ts">let a:[number, number?] = [1];
+</code></pre>
+<p>元组可以通过方括号，读取成员类型。</p>
+<pre><code class="language-ts">type Tuple = [string, number];
+type Age = Tuple[1]; // number
+</code></pre>
+<p>只读元组</p>
+<pre><code class="language-ts">// 写法一
+type t = readonly [number, string]
+// 写法二
+type t = Readonly&lt;[number, string]&gt;
+</code></pre>
+<h3 id="对象">对象</h3>
+<p>可选属性，需要判断是否为<code>undefined</code>以后</p>
+<pre><code class="language-ts">const user:{
+  firstName: string;
+  lastName?: string;
+} = { firstName: 'Foo'};
+
+// 写法一
+let firstName = (user.firstName === undefined)
+  ? 'Foo' : user.firstName;
+let lastName = (user.lastName === undefined)
+  ? 'Bar' : user.lastName;
+// 写法二（??，当左侧的操作数为 null 或者 undefined 时，返回其右侧操作数，否则返回左侧操作数）
+let firstName = user.firstName ?? 'Foo';
+let lastName = user.lastName ?? 'Bar';
+</code></pre>
+<p>属性名索引（key有<code>三种</code>类型：number、string、symbol）、谨慎使用</p>
+<pre><code class="language-ts">type MyObj = {
+  [property: string]: string
+}
+</code></pre>
+<p>需要分步声明，可以使用扩展运算符（...）合成一个新对象。</p>
+<pre><code class="language-ts">const pt0 = {};
+const pt1 = { x: 3 };
+const pt2 = { y: 4 };
+
+const pt = {
+  ...pt0, ...pt1, ...pt2
+};
+</code></pre>
+<h3 id="接口">接口</h3>
+<p>interface 允许<code>多重继承</code>。也可以<code>继承type、class</code></p>
+<pre><code class="language-ts">interface Style {
+  color: string;
+}
+interface Shape {
+  name: string;
+}
+// 有三个属性
+interface Circle extends Style, Shape {
+  radius: number;
+}
+</code></pre>
+<p>多个接口同名会合并</p>
+<pre><code class="language-ts">interface Box {
+  height: number;
+  width: number;
+}
+// 合并为三个属性
+interface Box {
+  length: number;
+}
+</code></pre>
+<p>interface和type的<code>异同</code></p>
+<ol>
+<li><code>type</code>能够表示非对象类型，而<code>interface</code>只能表示对象类型（包括数组、函数等）</li>
+<li><code>interface</code>可以继承其他类型，<code>type</code>不支持继承。（type添加属性用&amp;，type 和 interface可以相互继承）</li>
+<li>同名<code>interface</code>会自动合并，同名<code>type</code>则会报错</li>
+<li><code>type</code>可以扩展原始数据类型，<code>interface</code>不行</li>
+<li><code>interface</code>不能包含属性映射（mapping），<code>type</code>可以</li>
+<li><code>interface</code>无法表达某些复杂类型（比如交叉类型和联合类型），但是<code>type</code>可以</li>
+</ol>
+<h3 id="类">类</h3>
+<p>类的属性可以在顶层声明</p>
+<pre><code>class Point {
+  x:number;
+  y:number;
+}
+</code></pre>
+<p>结构类型原则<br>
+结构相同的类、接口、对象可以共用。兼容时，只检查实例成员，不考虑静态成员和构造方法。</p>
+<pre><code class="language-ts">class Point {
+  x: number;
+  y: number;
+  static t: number; // 不检查
+  constructor(x:number) {}
+}
+
+class Position {
+  x: number;
+  y: number;
+  z: number;
+  constructor(x:string) {}
+}
+
+const point:Point = new Position('');
+</code></pre>
+<p>abstract抽象类只能当作基类使用，直接新建抽象类的实例，会报错。</p>
+<ol>
+<li>抽象成员只能存在于抽象类，不能存在于普通类。</li>
+<li>抽象成员不能有具体实现的代码。也就是说，已经实现好的成员前面不能加abstract关键字。</li>
+<li>抽象成员前也不能有private修饰符，否则无法在子类中实现该成员。</li>
+<li>一个子类最多只能继承一个抽象类。</li>
+</ol>
+<h3 id="泛型">泛型</h3>
+<p>函数的泛型写法</p>
+<pre><code class="language-ts">function id&lt;T&gt;(arg:T):T {
+  return arg;
+}
+
+/* 变量形式定义的函数 */
+// 写法一
+let myId:&lt;T&gt;(arg:T) =&gt; T = id;
+// 写法二
+let myId:{ &lt;T&gt;(arg:T): T } = id;
+</code></pre>
+<p>接口的泛型写法</p>
+<pre><code class="language-ts">interface Box&lt;Type&gt; {
+  contents: Type;
+}
+let box:Box&lt;string&gt;;
+</code></pre>
+<p>类的泛型写法</p>
+<pre><code class="language-ts">class Pair&lt;K, V&gt; {
+  key: K;
+  value: V;
+}
+// 继承泛型类，要写成any
+class A&lt;T&gt; {
+  value: T;
+}
+class B extends A&lt;any&gt; {
+}
+</code></pre>
+<h3 id="enum枚举类型常量放在一个容器">enum枚举类型（常量放在一个容器）</h3>
+<p>既是类型，又是值（谨慎使用，编译后会产生一个对象）</p>
+<pre><code class="language-ts">// 第一个成员默认为0，第二个为1
+enum Color {
+  Red,     // 0
+  Green,   // 1
+  Blue     // 2
+}
+let c = Color.Green; // 1
+// 等同于
+let c = Color['Green']; // 1
+
+let c:Color = Color.Green; // 正确
+let c:number = Color.Green; // 正确
+
+/* 编译后留在代码中 */
+// 编译前
+enum Color {
+  Red,     // 0
+  Green,   // 1
+  Blue     // 2
+}
+
+// 编译后
+let Color = {
+  Red: 0,
+  Green: 1,
+  Blue: 2
+};
+</code></pre>
+<p>成员的值可以是任意数值，但不能是大整数（Bigint）。</p>
+<pre><code class="language-ts">// 除了数值和字符串，Enum 成员不允许使用其他值（比如 Symbol 值）。
+enum Color {
+  Red = 90,
+  Green = 0.5,
+  Blue = 7n // 报错
+}
+</code></pre>
+<h3 id="tsconfigjson">tsconfig.json</h3>
+<pre><code class="language-js">noImplicitAny：推断出any就会报错
+target：支持es版本的语法版本
+strictNullChecks：赋值为undefined的变量会被推断为undefined类型，赋值为null的变量会被推断为null类型，`而不是any`。
+</code></pre>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[运维笔记（狂神等）]]></title>
+        <id>https://shelter01.github.io/post/yun-wei/</id>
+        <link href="https://shelter01.github.io/post/yun-wei/">
+        </link>
+        <updated>2023-08-01T09:03:20.000Z</updated>
+        <content type="html"><![CDATA[<h2 id="git">Git</h2>
+<pre><code>git reflog
+git reset --hard reflog
+//本地切换分支，如果远程有此分支则自动同步
+git checkout [test]
+git branch -r/-a
+// 关联远程库
+git remote add origin git@github.com:michaelliao/learngit.git
+git push -u origin master
+// -f本地强行覆盖github
+git push origin -u master
+// 更换远程仓库
+git remote set-url origin [url]
+// 推送本地分支至远程
+git push -u origin feature/mic_service
+// 刷新远程分支列表
+git remote update origin --prune
+// 新建一个干净的分支（仓库）
+git checkout --orphan [new]
+git push -u origin new:master
+// 删除标签
+git tag -d v1.0.0
+git push origin :refs/tags/v1.0.0
+
+
+// OpenSSL SSL_read: Connection was reset, errno 10054错误解决
+git config --global http.sslVerify &quot;false&quot;
+
+// node ./scripts/install.js
+yarn install --ignore-scripts
+</code></pre>
+<h2 id="nginx">Nginx</h2>
+<ul>
+<li>正向代理：代理（隐藏）客户端</li>
+<li>反向代理：代理（隐藏）服务器</li>
+</ul>
+<p>常用命令</p>
+<pre><code>启动：nginx
+重启：nginx -s reload
+安全退出：nginx -s quit
+停止：nginx -s stop
+检查配置（查找路径）：nginx -t / whereis nginx
+</code></pre>
+<p>常用配置</p>
+<pre><code>proxy_pass反向代理
+server {
+    listen 80;
+    location / {
+        # 项目地址
+        proxy_pass http://x.x.x.x:x;
+    }
+}
+
+upstream负载均衡
+# 工作进程数（cpu核）
+worker_processes 1;
+events {
+    # 每个进程允许最大连接数
+    worker_connections 1024;
+}
+http {
+    upstream demo {
+        # 服务器列表
+        server x.x.x.x;
+        server x.x.x.x;
+    }
+    server {
+        listen 8080;
+        # 访问地址
+        server_name  www.abc.com;
+        location / {
+            # 反向代理到demo
+            proxy_pass http://demo;
+        }
+    }
+}
+</code></pre>
+<h2 id="docker">Docker</h2>
+<p>虚拟化：虚拟一套硬件，完整的操作系统，在此系统上安装和运行软件。<br>
+容器：直接运行在宿主机的内容，没有内核，也没有硬件。<br>
+每个容器都有自己的文件系统。<br>
+<strong>基础命令</strong></p>
+<pre><code>docker version
+// 查看系统信息，包括镜像和容器数量
+docker info
+// 查看本地下载的镜像
+docker images (-aq)
+</code></pre>
+<p><strong>镜像命令</strong></p>
+<pre><code>// 搜索镜像
+docker search
+// 下载镜像
+docker pull (mysql:5.7)
+// 删除镜像
+docker rmi (-f [镜像id] [镜像id])
+// 删除全部镜像
+docker rmi $(docker images -aq)
+</code></pre>
+<p><strong>容器命令</strong></p>
+<pre><code>// 运行容器
+docker run [可选参数] image
+参数：
+1. --name=&quot;Name&quot; 容器名
+2. -d 后台方式运行
+3. -it 交互方式运行
+4. -P 指定容器的端口
+5. -p 随机指定端口
+
+// 启动并进入容器
+docker run -it centos /bin/bash
+// 从容器中退出（容器停止）
+exit
+// 不停止退出
+ctrl + p + q
+// 查看当前运行的容器
+docker ps (-a[曾经运行的])
+// 删除容器
+docker rm [容器id]
+
+// 启动和停止容器
+docker start [容器id]
+docker restart [容器id]
+// 停止正在运行的容器和强制停止容器
+docker stop [容器id]
+docker kill [容器id]
+</code></pre>
+<p><strong>其他常用命令</strong></p>
+<ul>
+<li>docker容器后台运行的时候，必须有一个前台进程，没有的话docker就会自动停止</li>
+<li>nginx，容器启动后，发现自己没有提供服务，就会立刻停止</li>
+</ul>
+<p>查看日志</p>
+<pre><code>docker logs -tf --tail [数量] [容器id]
+</code></pre>
+<p>查看容器中进程信息</p>
+<pre><code>docker top [容器id]
+</code></pre>
+<p>查看容器元数据</p>
+<pre><code>docker inspect [容器id]
+</code></pre>
+<p>进入当前正在运行的容器</p>
+<pre><code>// 第一种（开启新终端/常用）
+docker exec -it [容器id] /bin/bash
+// 第二种（进入正在执行的）
+docker attach -it [容器id] /bin/bash
+</code></pre>
+<p>容器内拷贝文件到主机上</p>
+<pre><code>docker cp [容器id]:容器内路径 目的主机路径
+</code></pre>
+<p>查看cpu状态</p>
+<pre><code>docker stats
+</code></pre>
+<p><strong>容器数据卷</strong></p>
+<ul>
+<li>数据持久化，删容器数据就丢了</li>
+<li>将容器内的目录挂载到linux上</li>
+<li>双向绑定，无论容器是否在运行都可以</li>
+</ul>
+<pre><code>docker run -it -v /home/ceshi:/bin/bash (本机路径/容器路径)
+
+docker volume ls 查看本地所有卷
+</code></pre>
+<p>三种挂载方式</p>
+<pre><code>-v 容器内路径 // 匿名挂载
+-v 卷名:容器内路径 // 具名挂载
+-v /宿主机路径:/容器内路径 // 指定路径挂载
+</code></pre>
+<p>ro：readonly（数据只能从外部宿主机改变）<br>
+rw：readwrite</p>
+<pre><code>-v 卷名:容器内路径:ro/rw
+</code></pre>
+<p><strong>dockerfile</strong><br>
+用来构建docker镜像的构建文件。</p>
+<pre><code>FROM centos
+VOLUME [&quot;volume01&quot;,&quot;volume02&quot;]
+CMD echo &quot;---end---&quot;
+CMD /bin/bash
+</code></pre>
+<p><strong>数据卷容器</strong><br>
+共享容器之间的数据</p>
+<pre><code>docker02与docker01同步数据
+docker run -it --name docker01 my/centos:1.0
+docker run -it --name docker02 --volume-from docker01 my/centos:1.0
+</code></pre>
+<p><strong>Dockerfile指令</strong></p>
+<pre><code>FROM 基础镜像
+MAINTAINER 指定维护者信息
+RUN 镜像构建的时候运行命令
+ADD 步骤。比如添加一些压缩包
+WORKDIR 镜像的工作目录
+VOLUME 挂载的目录
+EXPOSE 指定对外端口
+CMD 指定启动时运行的命令
+COPY 类似ADD，将文件拷贝到镜像中
+ENV 构建是设置环境变量
+
+docker build -f mydockerfile -t my-centos:1.0 .
+docker history [镜像id] 显示镜像的所有制作过程步骤
+</code></pre>
+<h2 id="linux">linux</h2>
+<p>开机启动的程序，windows称为服务，linux称为守护进程。<br>
+ssh连接服务器</p>
+<pre><code>ssh root@ip -p port
+</code></pre>
+<p><strong>目录</strong></p>
+<ul>
+<li>/bin：放常用指令</li>
+<li>/boot：系统核心文件（不要动）</li>
+<li>/dev、/mnt：挂载一些东西</li>
+<li><code>/etc</code>：存放配置文件</li>
+<li><code>/home</code>：用户主目录，类似win的user</li>
+<li>/lib：类似win的dll文件（不要动）</li>
+<li><code>/opt</code>：额外安装软件的目录</li>
+<li>/proc：用户内存映射（不用管）</li>
+<li><code>/root</code>：超级管理员用户主目录</li>
+<li><code>/usr</code>：普通目录主目录（对比root、类似win的program files）</li>
+<li><code>/tmp</code>：用完即丢的、安装包等</li>
+<li><code>/var</code>：不断扩充的东西</li>
+</ul>
+<p><strong>文件夹</strong></p>
+<ul>
+<li>
+<p><code>pwd</code>：查看当前目录</p>
+</li>
+<li>
+<p>mkdir -p test/test1/test2：递归创建文件夹</p>
+</li>
+<li>
+<p>rmdir -p test：递归删除文件夹（所有）（包括父目录）</p>
+</li>
+<li>
+<p>cp a.js wenjianjia：拷贝文件到文件夹</p>
+</li>
+<li>
+<p>mv a.js wenjianjia：移动文件到文件夹</p>
+</li>
+<li>
+<p>rm -rf wenjianjia/*：强制递归删除（不包括父目录）</p>
+</li>
+</ul>
+<h2 id="sentry">Sentry</h2>
+<h2 id="jenkins">Jenkins</h2>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[计算机网络（interview）]]></title>
+        <id>https://shelter01.github.io/post/ji-suan-ji-wang-luo-zhi-shi-dian/</id>
+        <link href="https://shelter01.github.io/post/ji-suan-ji-wang-luo-zhi-shi-dian/">
+        </link>
+        <updated>2023-07-09T11:27:13.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="http10-http11-http20协议的区别">http1.0、http1.1、http2.0协议的区别</h3>
+<p>http1.0<br>
+它的特点是每次请求和响应完毕后都会销毁 TCP 连接，同时规定前一个响应完成后才能发送下一个请求。这样做有两个问题：</p>
+<ol>
+<li>无法复用连接<br>
+每次请求都要创建新的 TCP 连接，完成三次握手和四次挥手，网络利用率低</li>
+<li>队头阻塞<br>
+如果前一个请求被某种原因阻塞了，会导致后续请求无法发送。</li>
+</ol>
+<p>http1.1 是 http1.0 的改进版，它做出了以下改进：</p>
+<ol>
+<li>长连接<br>
+http1.1 允许在请求时增加请求头<code>connection:keep-alive</code>，这样便允许后续的客户端请求在一段时间内复用之前的 TCP 连接</li>
+<li>管道化<br>
+基于长连接的基础，管道化可以不等第一个请求响应继续发送后面的请求，但响应的顺序还是按照请求的顺序返回。</li>
+<li>缓存处理<br>
+新增响应头 cache-control，用于实现客户端缓存。</li>
+<li>断点传输<br>
+在上传/下载资源时，如果资源过大，将其分割为多个部分，分别上传/下载，如果遇到网络故障，可以从已经上传/下载好的地方继续请求，不用从头开始，提高效率</li>
+</ol>
+<p>http2.0 进一步优化了传输效率，它主要有以下改进：</p>
+<ol>
+<li>二进制分帧<br>
+将传输的消息分为更小的二进制帧，每帧有自己的标识序号，即便被随意打乱也能在另一端正确组装</li>
+<li>多路复用<br>
+基于二进制分帧，在同一域名下所有访问都是从同一个 tcp 连接中走，并且不再有队头阻塞问题，也无须遵守响应顺序</li>
+<li>头部压缩<br>
+http2.0 通过字典的形式，将头部中的常见信息替换为更少的字符，极大的减少了头部的数据量，从而实现更小的传输量</li>
+<li>服务器推<br>
+http2.0 允许服务器直接推送消息给客户端，无须客户端明确的请求</li>
+</ol>
+<h3 id="浏览器缓存机制">浏览器缓存机制</h3>
+<p>强缓存：命中后直接使用缓存。（状态码200）<br>
+响应头：</p>
+<ol>
+<li>Expires：表示服务器资源过期的<code>绝对时间</code></li>
+<li>Cache-Control：资源的缓存策略，<code>相对时间</code>，max-age和no-cache等。（优先）</li>
+</ol>
+<p>协商缓存：发送一次请求，询问资源是否被修改，若没有修改则使用缓存的资源，否则请求新的资源。（状态码304）<br>
+http请求头：</p>
+<ol>
+<li>If-Modified-Since：表示上一次资源的修改时间，用于判断资源是否被修改过。</li>
+<li>If-None-Match：表示上一次资源的标识符，用于判断资源是否被修改过。<br>
+http响应头：</li>
+<li>Last-Modified：表示资源的最后修改时间。</li>
+<li>ETag：表示资源的标识符，用于判断资源是否被修改过。</li>
+</ol>
+<h3 id="http状态码">http状态码</h3>
+<ol>
+<li>1xx：请求已接收，需要继续处理。<br>
+100（客户端继续发送请求，这是临时响应），101（服务器根据客户端的请求切换协议，主要用于websocket或http2升级）</li>
+<li>2xx：服务器根据客户端的请求切换协议，主要用于websocket或http2升级。<br>
+200（成功），206（用于断点续传，或是视频等大文件的加载）</li>
+<li>3xx：表示要完成请求，需要进一步操作。 通常，这些状态代码用来重定向。<br>
+301（永久重定向，新域名替换旧域名，会缓存），302（临时重定向，首页临时跳转活动页，不会缓存），304（协商缓存，告知使用本地缓存）</li>
+<li>4xx：代表了客户端看起来可能发生了错误，妨碍了服务器的处理。<br>
+400（错误请求，服务器不理解请求的语法） ，403（禁止，服务器拒绝请求，内网ip才能访问等），404（未找到，服务器找不到请求的网页）</li>
+<li>5xx：表示服务器无法完成明显有效的请求。这类状态码代表了服务器在处理请求的过程中有错误或者异常状态发生。<br>
+500（服务器内部错误，服务器遇到错误，无法完成请求），503（服务不可用服务器目前无法使用，由于超载或停机维护），504（网关超时服务器作为网关或代理，但是没有及时从上游服务器收到请求）</li>
+</ol>
+<h3 id="tcp握手挥手">tcp握手挥手</h3>
+<ol>
+<li>TCP 连接（三次握手）：发送序号是上一次的确认序号，确认序号是上一次的发送信号+1<br>
+a. 客户端：发送包 SYN、seq=x<br>
+b. 服务器：发送包 SYN、seq=y + 确认包 ACK、ack=x+1<br>
+c. 客户端：确认包 ACK、seq=x+1、ack=y+1</li>
+<li>四次挥手，中断连接<br>
+a. 客户端：发送 FIN 数据包seq=x<br>
+b. 服务端：发送 ACK 确认包ack=x+1<br>
+c. 服务端：断开连接包 FIN seq=y，发送 ACK 确认包ack=x+1<br>
+d. 客户端：发送 ACK 确认包y+1</li>
+</ol>
+<h3 id="hash路由和history路由">hash路由和history路由</h3>
+<ol>
+<li>hash路由：hash路径发生变化时，浏览器不会发请求，会触发onhashchange。
+<ul>
+<li>通过onhashchange监听hash的改变，实现无刷新跳转</li>
+<li>永远不会提交到server，#后的内容不会发送，可以用来刷新资源</li>
+</ul>
+</li>
+<li>history路由：直接更改前端路由，从而不发起请求。
+<ul>
+<li>通过pushState、replaceState实现跳转</li>
+<li>需要和nginx配合，每次跳转路由都会</li>
+</ul>
+</li>
+</ol>
+<h3 id="浏览器渲染页面的过程">浏览器渲染页面的过程</h3>
+<p>从耗时的角度，浏览器请求、加载、渲染一个页面</p>
+<ol>
+<li><code>DNS 解析</code>，将<code>网址转为IP地址</code></li>
+<li>TCP 连接</li>
+<li>HTTP 请求及响应</li>
+<li>服务器响应</li>
+<li>客户端渲染</li>
+<li><code>四次挥手</code><br>
+浏览器对内容的渲染</li>
+<li>处理 HTML 标记并构建 DOM 树。</li>
+<li>处理 CSS 标记并构建 CSSOM 树。</li>
+<li>将 DOM 与 CSSOM 合并成一个渲染树。</li>
+<li>根据渲染树来布局，以计算每个节点的几何信息。</li>
+<li>将各个节点绘制到屏幕上。
+<ol>
+<li>绘制 render 树（painting 重绘），绘制页面像素信息</li>
+<li>浏览器会将各层的信息发送给 GPU，GPU 会将各层合成（composite）显示在屏幕上。</li>
+</ol>
+</li>
+</ol>
+<h3 id="安全问题">安全问题</h3>
+<p>XSS（跨站脚本攻击）<br>
+XSS 的本质是：<code>恶意代码</code>未经过滤，与网站正常的代码<code>混在一起</code>；浏览器<code>无法分辨</code>哪些脚本是可信的，导致恶意脚本<code>被执行</code>。</p>
+<p>注入<code>恶意代码</code>的方式：</p>
+<ul>
+<li>
+<p>来自用户的UGC（<code>用户输入</code>）信息</p>
+</li>
+<li>
+<p>来自第三方的链接：</p>
+</li>
+<li>
+<p>URL参数</p>
+</li>
+<li>
+<p>POST参数</p>
+</li>
+<li>
+<p>Referer（可能来自不可信的来源）</p>
+</li>
+<li>
+<p>Cookie（可能来自其他子域注入）</p>
+</li>
+<li>
+<p>浏览器端：DOM型<code>javascript本身漏洞</code></p>
+</li>
+<li>
+<p>服务端：存储型（存储在<code>数据库</code>里）、反射型（存储在<code>URL</code>里）</p>
+</li>
+</ul>
+<p><strong>XSS攻击的预防</strong></p>
+<ol>
+<li>攻击者提交恶意代码（可输入过滤，非完全可靠）</li>
+<li>浏览器执行恶意代码</li>
+</ol>
+<p><strong>预防存储型和反射型XSS攻击</strong><br>
+在<code>服务端取出代码</code>后，<code>插入</code>到响应HTML里，被浏览器执行。<br>
+两种常见做法：</p>
+<ol>
+<li>纯<code>前端渲染</code>，分开代码和数据（警惕DOM型：javascript:xxx等）</li>
+<li>对HTML充分<code>转义</code>。常用的模板引擎，如 doT.js、ejs、FreeMarker 等。</li>
+</ol>
+<p><strong>预防DOM型XSS攻击</strong></p>
+<ul>
+<li>javascript代码本身不够严谨，执行了<code>不可信</code>的数据。</li>
+<li>使用innerHTML、document.write()等需要注意。不可信数据尽量使用.textContent、.setAttribute等。</li>
+<li>DOM内联事件监听，如location、onclick、onload、href、setTimeout等，避免将不可信数据拼接传给这些API</li>
+</ul>
+<p><strong>其他XSS</strong><br>
+通用方案：</p>
+<ul>
+<li>csp</li>
+<li>输入内容长度控制</li>
+</ul>
+<p>CSRF（跨站请求伪造）</p>
+<ul>
+<li>在受害者访问一个网站时，其 Cookie 还<code>没有过期</code>的情况下，攻击者<code>伪造一个链接地址</code>发送受害者并欺骗让其点击，从而形成 CSRF 攻击。（盗用受害者的cookie发送给服务端）</li>
+</ul>
+<p>预防：</p>
+<ol>
+<li>不使用cookie</li>
+<li>验证http referer字段</li>
+<li>请求头添加token（token不会被自动带上）</li>
+<li>http头添加自定义属性验证</li>
+</ol>
+<p>需要做的安全处理</p>
+<ol>
+<li>代码混淆</li>
+<li>秘钥</li>
+</ol>
+<h3 id="get和post的区别">get和post的区别</h3>
+<ul>
+<li>post更<code>安全</code>（不会被缓存，不在浏览记录里，不在服务器日志里）</li>
+<li>post能发送<code>更大</code>数据</li>
+<li>post能发送<code>更多类型</code>的数据</li>
+<li>post比get<code>慢</code>（get能缓存图片、post没有管道，过程慢）</li>
+</ul>
+<h3 id="content-length">Content-Length</h3>
+<ul>
+<li>描述HTTP消息<code>实体的传输长度</code></li>
+<li>get请求中，只有<code>响应头</code>带 content-length</li>
+<li>post请求中，请求头响应头中<code>都有</code></li>
+</ul>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[html、css（interview）]]></title>
+        <id>https://shelter01.github.io/post/htmlcss-fu-xi-ti/</id>
+        <link href="https://shelter01.github.io/post/htmlcss-fu-xi-ti/">
+        </link>
+        <updated>2023-07-03T01:44:56.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="bfc触发条件">BFC触发条件</h3>
+<pre><code class="language-css">根元素 html
+position: fixed | absolute;
+float: left | right;
+overflow: hidden | auto | scroll;
+display: flex | table-cell | inline-block;
+</code></pre>
+<p>BFC不受margin折叠影响</p>
+<h3 id="清除浮动">清除浮动</h3>
+<pre><code class="language-css">.clearfix::after {
+	content: '';
+	display: block;
+	height: 0;
+	clear: both;
+}
+</code></pre>
+<h3 id="文字省略号">文字省略号</h3>
+<pre><code class="language-css">.ellipsis-line { // 单行
+  overflow: hidden;
+  text-overflow: ellipsis; 
+  white-space: nowrap;
+}
+
+.multyLine_ellipsis { // 多行
+  overflow: hidden;
+  text-overflow: ellipsis; 
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+</code></pre>
+<h3 id="flex">flex</h3>
+<ul>
+<li><code>flex</code> 是 <code>flex-grow</code>, <code>flex-shrink</code> 和 <code>flex-basis</code> 的简写
+<ul>
+<li>默认值为 <code>0 1 auto</code>，意思是项目默认有剩余空间也不放大（0），但空间不足会缩小（1）</li>
+<li><code>flex-basis</code>和<code>width</code>相似，并具有更高的优先级</li>
+<li>子元素设置 <code>flex: 1</code>，等同于：<code>flex: 1 1 0%</code>，意思是可以放大了</li>
+</ul>
+</li>
+</ul>
+<pre><code class="language-css">// flex-grow flex-shrink flex-basis
+// 默认 0 1 auto
+flex: 1; // 1 1 0%
+flex: 0; // 0 1 0%
+
+flex-basis: 0%; 会强制项目占据主轴上的最小空间，不考虑内容大小。
+flex-basis: auto; 会根据项目的内容和可用空间自动确定主轴上的大小。
+</code></pre>
+<h3 id="大屏适配">大屏适配</h3>
+<ol>
+<li>创建一个 layout 父容器，专门做适配，把内容以插槽的形式放入</li>
+<li>layout 接收两个参数，设计稿上的 <code>width</code> 和 <code>height</code></li>
+<li><code>mounted</code> 中计算设计稿和屏幕比例
+<ol>
+<li><code>const w = window.innerWidth / this.width</code></li>
+<li><code>const h = window.innerHeight / this.height</code></li>
+<li><code>return w &gt; h ? h : w</code></li>
+<li><code>this.style.transform = 'translate(-50%, -50%) scale(getScale())'</code></li>
+</ol>
+</li>
+<li>初始化计算一次，后续监听窗口 <code>onresize</code> 设置</li>
+<li>页面设置样式都用设计稿上 px 写</li>
+</ol>
+<h3 id="canvas和svg的区别">canvas和svg的区别</h3>
+<table>
+<thead>
+<tr>
+<th>Canvas</th>
+<th>SVG</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>它是通过 JavaScript 来绘制的</td>
+<td>使用 XML 的 2d 语言</td>
+</tr>
+<tr>
+<td>取决于分辨率（依赖）</td>
+<td>独立于分辨率（不依赖）</td>
+</tr>
+<tr>
+<td>不支持事件处理程序</td>
+<td>支持事件处理程序</td>
+</tr>
+<tr>
+<td>适用于小规模渲染应用程序</td>
+<td>在大规模渲染应用程序中表现更好</td>
+</tr>
+<tr>
+<td>最适合图像密集型的游戏，其中的许多对象会被频繁重绘</td>
+<td>不适合游戏应用，复杂度高会减慢渲染速度（任何过度使用 DOM 的应用都不快）</td>
+</tr>
+<tr>
+<td><strong>适用范围：</strong></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>Canvas 是逐像素进行渲染的，一旦图形绘制完成，就不会继续被浏览器关注。而 SVG 是通过 DOM 操作来显示的。</li>
+<li>所以 Canvas 的文本渲染能力弱，而 SVG 最适合带有大型渲染区域的应用程序。</li>
+<li>Canvas 最适合有许多对象要被频繁重绘的图形密集型游戏。</li>
+<li>SVG 由于 DOM 操作 在复杂度高的游戏应用中 会减慢渲染速度。所以不适合在游戏应用。</li>
+</ul>
+<h3 id="css选择器优先级">css选择器优先级</h3>
+<ol>
+<li>!important</li>
+<li>id选择器</li>
+<li>类选择器，属性选择器，伪类选择器</li>
+<li>类型选择器，伪元素选择器</li>
+</ol>
+<h3 id="display-none-visibility-hidden-和-opacity-0-的区别">display: none、visibility: hidden 和 opacity: 0 的区别</h3>
+<ul>
+<li><code>display: none</code>	不占空间，不可点击	（回流 + 重绘）</li>
+<li><code>visibility: hidden</code>	 占据空间，不可点击	（重绘）</li>
+<li><code>opacity: 0</code>	 占据空间，可以点击	（重建图层，性能较高）</li>
+</ul>
+<h3 id="布局">布局</h3>
+<p><strong>水平垂直居中</strong></p>
+<pre><code class="language-css">position: absolute;
+left: 0;
+top: 0;
+right: 0;
+bottom: 0;
+margin: auto;
+</code></pre>
+<p>inline或inline-block</p>
+<pre><code class="language-css">display: table-cell;
+text-align: center;
+verticle-align: middle;
+</code></pre>
+<p><strong>居中、两列、三列等常规布局</strong><br>
+<a href="https://willbchang.notion.site/46055a20adbb4fbeb4c808c7a98188ac#b63264ff9ca743b0961b8a58a0dad386">居中、两列、三列等常规布局</a></p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[音视频（笔记）]]></title>
+        <id>https://shelter01.github.io/post/webrtc-xue-xi-bi-ji/</id>
+        <link href="https://shelter01.github.io/post/webrtc-xue-xi-bi-ji/">
+        </link>
+        <updated>2023-05-21T09:08:20.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="rtmp直播是单向的webrtc是双向的">rtmp直播是单向的，webrtc是双向的</h3>
+<p>媒体协商：是指在建立 WebRTC 连接时，对要传输的媒体流进行协商和约定的过程。</p>
+<ol>
+<li>sdp交换：SDP 包含媒体流的参数、编解码器配置等信息</li>
+<li>ice协商：确定对等连接的网络地址和传输路径<br>
+网络协商：媒体协商之后，建立数据通道时对网络传输参数进行协商和优化的过程。</li>
+<li>STUN：设备向 STUN 服务器发送请求，服务器会返回设备所使用的公网地址和端口信息。</li>
+<li>TURN:  当设备无法直接通信时，它可以将数据发送到 TURN 服务器，然后由 TURN 服务器转发给目标设备。TURN 服务器充当中继，使得设备可以绕过防火墙和 NAT。</li>
+</ol>
+<h3 id="多方通信的架构">多方通信的架构</h3>
+<p>mcu：各端发送到服务器混流。<br>
+sfu：服务器只负责转发，客户端接收到多路流。</p>
+]]></content>
+    </entry>
+    <entry>
+        <title type="html"><![CDATA[项目总结（interview）]]></title>
+        <id>https://shelter01.github.io/post/webrtc-lian-xian-xiang-mu/</id>
+        <link href="https://shelter01.github.io/post/webrtc-lian-xian-xiang-mu/">
+        </link>
+        <updated>2023-04-14T02:03:47.000Z</updated>
+        <content type="html"><![CDATA[<h3 id="导播连线服务端合成流">导播连线（服务端合成流）：</h3>
+<p>背景：</p>
+<ol>
+<li>用户需要基于我们sass云平台的<code>导播台</code>，实现多人<code>视频通话</code>功能。</li>
+<li>导播台是一个<code>实时制作直播流</code>的项目，可以将<code>多个</code>输入源（推流、拉流、图片等）叠加成<code>一个输出源</code>画面，<code>提供拉流地址</code>给到c端观看直播。</li>
+<li>导播连线的项目就是将<code>web端采集</code>到的音视频流，推流到导播台的<code>一路输入源</code>中。一路推本地，一路拉mcu。既能看到用户自己采集的画面，又能看到服务端合成后的mcu流。</li>
+</ol>
+<p><strong>推流</strong><br>
+获取音视频流：</p>
+<ul>
+<li><code>getUserMedia</code>获取音视频流。</li>
+<li>参数中<code>aspectRatio</code>控制16/9或者9/16的比例。</li>
+<li><code>facingMode</code>控制前后置摄像头，更换前后置时需注意断开流。</li>
+<li><code>deviceId</code>可以获取指定音视频设备的流、切换设备时用。</li>
+</ul>
+<pre><code class="language-js">navigator.mediaDevices.getUserMedia({
+    video: {
+        aspectRatio: 16 / 9,
+        facingMode: 'user',
+        deviceId: ''
+    },
+    audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: false
+    }
+})
+
+stream.getVideoTracks()[0].stop()
+</code></pre>
+<p>创建canvas：</p>
+<ol>
+<li>根据视频的宽高大小、比例创建canvas画布。</li>
+<li><code>captureStream</code>将canvas转为mediaStream。</li>
+<li>mediaStream转换为HTMLVideoElement，作为<code>drawImage</code> 的参数。</li>
+</ol>
+<pre><code class="language-js">const canvas = document.createElement('canvas')
+const context2d = canvas.getContext('2d')
+const canvasToStream = canvas.captureStream(25)
+
+// mediaStream转换为HTMLVideoElement
+const htmlVideo = document.createElement('video')
+htmlVideo.autoplay = true
+htmlVideo.onloadedmetadata = () =&gt; {
+    htmlVideo.muted = true
+}
+htmlVideo.srcObject = stream
+</code></pre>
+<p>canvas画图：</p>
+<ol>
+<li>requestAnimationFrame API在某些设备的兼容性有问题，主线程里后台定时器和requestAnimationFrame都会休眠。所以采用webworker+setTimeout实现canvas的帧绘制。</li>
+<li>镜像问题。ios的微信不适配。（可能是canvas+setTimeout性能问题）</li>
+</ol>
+<pre><code class="language-js">// 移动位置后，坐标位置都会在当前视频的左上角。先到坐标(width, 0)，再相对x=width翻转图片
+canvas.context2d.translate(width, 0)
+canvas.context2d.scale(-1, 1)
+</code></pre>
+<p>WebSocket推流通信：</p>
+<ol>
+<li>连接服务器，在onopen、onmessage、onclose、onerror中定义推流的一些规则（推流时机、交换sdp、断开连接的规则等）。</li>
+<li>发送本地的sdp信息（推流过程见下一步）</li>
+<li>接收服务端传过来的sdp，<code>setRemoteDescription</code>设置远程sdp信息</li>
+</ol>
+<pre><code class="language-js">pc.setRemoteDescription(new RTCSessionDescription(sdp))
+</code></pre>
+<p>WebRTC推流：</p>
+<ol>
+<li><code>RTCPeerConnection</code>创建一个由本地计算机到远端的 WebRTC 连接实例（pc）。</li>
+<li><code>addTrack</code>将音视频轨道添加进pc中。</li>
+<li><code>contHint</code>可以设置一些轨道内容类型、影响传输的策略。</li>
+<li><code>replaceTrack</code>或者<code>removeTrack + addTrack</code>定义替换轨道的方法。例如前后置摄像头（因为视频轨道由canvas合成，因此仅替换音频轨道即可，但切换stream时需更新canvas的视频轨道）。其中很重要的一点是就得mediaStream更换前需将<code>旧stream停止</code>。</li>
+<li><code>createOffer</code>创建一个SDP offer，目的是启动一个新的 WebRTC 去连接远程端点。<code>setLocalDescription</code>将offer设置进本地sdp中，发送给服务端。</li>
+<li>接收到服务端的sdp后<code>setRemoteDescription</code>设置远程sdp。</li>
+<li>一旦SDP的交换和设置完成，WebRTC会自动建立ICE连接（候选地址的协商），并开始传输媒体流。</li>
+</ol>
+<pre><code class="language-js">// peerConnection
+const pc = new RTCPeerConnection()
+stream.getTracks().forEach((track) =&gt; {
+    pc.addTrack(track)
+})
+// local sdp
+const offer = await state.pc.createOffer()
+pc.setLocalDescription(offer)
+// 设置服务端传来的sdp
+pc.setRemoteDescription(sdp)
+</code></pre>
+<p>WebSocket通信，交换消息，等一些业务操作。</p>
+<p>WebSocket拉流：</p>
+<ol>
+<li><code>RTCPeerConnection</code>创建一个由本地计算机到远端的 WebRTC 连接实例（pc）。</li>
+<li>获取播放器dom元素<code>videoElement</code>，在pc的<code>onaddstream</code>或者<code>onaddtrack</code>钩子初始化播放器。</li>
+<li>接收到服务端的sdp后<code>setRemoteDescription</code>设置远程sdp。</li>
+</ol>
+<pre><code class="language-js">const videoElement = document.getElementById(videoId)
+const  pc = new RTCPeerConnection()
+
+pc.onaddstream = (event) =&gt; {
+    videoElement.srcObject = event.stream
+}
+// 设置服务端传来的sdp
+pc.setRemoteDescription(sdp)
+// 设置local sdp
+const answer = pc.createAnswer()
+pc.setLocalDescription(answer)
+</code></pre>
+<p>流处理的一些点：</p>
+<pre><code class="language-js">// 音视频开关（关闭麦克风为例）
+const audioTracks = lcps.stream.getAudioTracks()
+audioTracks.forEach((track) =&gt; {
+    track.enabled = false
+})
+</code></pre>
+<p>翻页以及mcu画面的调节、蒙层的调节、本地视频的调节、音量名称的调整、自动播放的处理、本地视频静音、横屏适配等问题、指挥台mcu音量调节。</p>
+<p><strong>碰到的问题</strong>：</p>
+<ol>
+<li>webrtc推流通信的过程异常、重连机制</li>
+</ol>
+<blockquote>
+<p>问题：<code>网络</code>的不稳定性等诸多情况会导致断线情况<br>
+方案：需要ice状态异常的情况下socket通知后端，后重新建立socket去重连。重连的机制设置<code>最大次数</code>、重试时间间隔（递增或者保持不动）。</p>
+</blockquote>
+<ol start="2">
+<li>后台推流问题</li>
+</ol>
+<blockquote>
+<p>问题：由于前端需要<code>合成</code>画面（<code>镜像</code>流），用到canvas。<code>requestAnimationFrame</code>在后台存在<code>休眠</code>问题，需要支持网页<code>后台推流</code>的需求。<br>
+方案：可考虑electron的桌面端、最终还是用到了webworker（不会休眠），setInterval在某些苹果机型有问题，所以用到了setTimeout。</p>
+</blockquote>
+<ol start="3">
+<li>浏览器兼容性问题</li>
+</ol>
+<blockquote>
+<p>问题：拒绝麦克风权限、浏览器不支持getUserMedia、<code>浏览器API</code>不统一等问题<br>
+方案：拒绝权限需要提示（<code>浏览器端</code>手动打开、<code>微信</code>退出重进），adaplerjs统一各API，小米浏览器不支持getUsermedia给出提示</p>
+</blockquote>
+<ol start="4">
+<li>苹果手机自动播放的问题</li>
+</ol>
+<blockquote>
+<p>问题：某些苹果设备禁止自动播放，需要手动交互<br>
+方案：<code>video.pause</code>状态去判断是否播放，未播放需要给到用户交互按钮</p>
+</blockquote>
+<ol start="5">
+<li>设置弱网策略</li>
+</ol>
+<blockquote>
+<p>问题：由于弱网环境帧率和分辨率不可兼得<br>
+方案：保帧率和保分辨率模式，要么画面卡，要么画面糊</p>
+</blockquote>
+<p>facingMode等切换流配置的问题，需要track.stop()<br>
+基于坑位的布局（原先基于翻页）、grid布局更加灵活</p>
+<p>合成音频的原理<br>
+throw err会拦截await后面的操作</p>
+<p><strong>项目优化</strong></p>
+<h3 id="讲师推流客户端合成流">讲师推流（客户端合成流）</h3>
+<ul>
+<li>将客户端采集到的摄像头、麦克风、屏幕共享及其音频流<code>混成一路流</code>推给服务端、最终给到c端移动端直播流</li>
+<li><code>三路</code>lps流实现连线功能。第一路就是原先讲师混的一路流，第二路是讲师单独给学生a推的音频流（仅讲师的音频），第三路是学生a推给讲师的音频流（仅学生a的音频、需要合到第一路中）</li>
+<li>一些其他的聊天、白板功能</li>
+</ul>
+<p><strong>项目优化</strong></p>
+]]></content>
+    </entry>
+</feed>

@@ -1,0 +1,425 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>运维笔记（狂神等） | 谢尔特的小窝</title>
+<link rel="shortcut icon" href="https://shelter01.github.io/favicon.ico?v=1710687923650">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://shelter01.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="运维笔记（狂神等） | 谢尔特的小窝 - Atom Feed" href="https://shelter01.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="Git
+git reflog
+git reset --hard reflog
+//本地切换分支，如果远程有此分支则自动同步
+git checkout [test]
+git branch -r/-a
+// 关联远程库
+git remote a..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://shelter01.github.io">
+  <img class="avatar" src="https://shelter01.github.io/images/avatar.png?v=1710687923650" alt="">
+  </a>
+  <h1 class="site-title">
+    谢尔特的小窝
+  </h1>
+  <p class="site-description">
+    个人项目和面试题记录
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              运维笔记（狂神等）
+            </h2>
+            <div class="post-info">
+              <span>
+                2023-08-01
+              </span>
+              <span>
+                6 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h2 id="git">Git</h2>
+<pre><code>git reflog
+git reset --hard reflog
+//本地切换分支，如果远程有此分支则自动同步
+git checkout [test]
+git branch -r/-a
+// 关联远程库
+git remote add origin git@github.com:michaelliao/learngit.git
+git push -u origin master
+// -f本地强行覆盖github
+git push origin -u master
+// 更换远程仓库
+git remote set-url origin [url]
+// 推送本地分支至远程
+git push -u origin feature/mic_service
+// 刷新远程分支列表
+git remote update origin --prune
+// 新建一个干净的分支（仓库）
+git checkout --orphan [new]
+git push -u origin new:master
+// 删除标签
+git tag -d v1.0.0
+git push origin :refs/tags/v1.0.0
+
+
+// OpenSSL SSL_read: Connection was reset, errno 10054错误解决
+git config --global http.sslVerify &quot;false&quot;
+
+// node ./scripts/install.js
+yarn install --ignore-scripts
+</code></pre>
+<h2 id="nginx">Nginx</h2>
+<ul>
+<li>正向代理：代理（隐藏）客户端</li>
+<li>反向代理：代理（隐藏）服务器</li>
+</ul>
+<p>常用命令</p>
+<pre><code>启动：nginx
+重启：nginx -s reload
+安全退出：nginx -s quit
+停止：nginx -s stop
+检查配置（查找路径）：nginx -t / whereis nginx
+</code></pre>
+<p>常用配置</p>
+<pre><code>proxy_pass反向代理
+server {
+    listen 80;
+    location / {
+        # 项目地址
+        proxy_pass http://x.x.x.x:x;
+    }
+}
+
+upstream负载均衡
+# 工作进程数（cpu核）
+worker_processes 1;
+events {
+    # 每个进程允许最大连接数
+    worker_connections 1024;
+}
+http {
+    upstream demo {
+        # 服务器列表
+        server x.x.x.x;
+        server x.x.x.x;
+    }
+    server {
+        listen 8080;
+        # 访问地址
+        server_name  www.abc.com;
+        location / {
+            # 反向代理到demo
+            proxy_pass http://demo;
+        }
+    }
+}
+</code></pre>
+<h2 id="docker">Docker</h2>
+<p>虚拟化：虚拟一套硬件，完整的操作系统，在此系统上安装和运行软件。<br>
+容器：直接运行在宿主机的内容，没有内核，也没有硬件。<br>
+每个容器都有自己的文件系统。<br>
+<strong>基础命令</strong></p>
+<pre><code>docker version
+// 查看系统信息，包括镜像和容器数量
+docker info
+// 查看本地下载的镜像
+docker images (-aq)
+</code></pre>
+<p><strong>镜像命令</strong></p>
+<pre><code>// 搜索镜像
+docker search
+// 下载镜像
+docker pull (mysql:5.7)
+// 删除镜像
+docker rmi (-f [镜像id] [镜像id])
+// 删除全部镜像
+docker rmi $(docker images -aq)
+</code></pre>
+<p><strong>容器命令</strong></p>
+<pre><code>// 运行容器
+docker run [可选参数] image
+参数：
+1. --name=&quot;Name&quot; 容器名
+2. -d 后台方式运行
+3. -it 交互方式运行
+4. -P 指定容器的端口
+5. -p 随机指定端口
+
+// 启动并进入容器
+docker run -it centos /bin/bash
+// 从容器中退出（容器停止）
+exit
+// 不停止退出
+ctrl + p + q
+// 查看当前运行的容器
+docker ps (-a[曾经运行的])
+// 删除容器
+docker rm [容器id]
+
+// 启动和停止容器
+docker start [容器id]
+docker restart [容器id]
+// 停止正在运行的容器和强制停止容器
+docker stop [容器id]
+docker kill [容器id]
+</code></pre>
+<p><strong>其他常用命令</strong></p>
+<ul>
+<li>docker容器后台运行的时候，必须有一个前台进程，没有的话docker就会自动停止</li>
+<li>nginx，容器启动后，发现自己没有提供服务，就会立刻停止</li>
+</ul>
+<p>查看日志</p>
+<pre><code>docker logs -tf --tail [数量] [容器id]
+</code></pre>
+<p>查看容器中进程信息</p>
+<pre><code>docker top [容器id]
+</code></pre>
+<p>查看容器元数据</p>
+<pre><code>docker inspect [容器id]
+</code></pre>
+<p>进入当前正在运行的容器</p>
+<pre><code>// 第一种（开启新终端/常用）
+docker exec -it [容器id] /bin/bash
+// 第二种（进入正在执行的）
+docker attach -it [容器id] /bin/bash
+</code></pre>
+<p>容器内拷贝文件到主机上</p>
+<pre><code>docker cp [容器id]:容器内路径 目的主机路径
+</code></pre>
+<p>查看cpu状态</p>
+<pre><code>docker stats
+</code></pre>
+<p><strong>容器数据卷</strong></p>
+<ul>
+<li>数据持久化，删容器数据就丢了</li>
+<li>将容器内的目录挂载到linux上</li>
+<li>双向绑定，无论容器是否在运行都可以</li>
+</ul>
+<pre><code>docker run -it -v /home/ceshi:/bin/bash (本机路径/容器路径)
+
+docker volume ls 查看本地所有卷
+</code></pre>
+<p>三种挂载方式</p>
+<pre><code>-v 容器内路径 // 匿名挂载
+-v 卷名:容器内路径 // 具名挂载
+-v /宿主机路径:/容器内路径 // 指定路径挂载
+</code></pre>
+<p>ro：readonly（数据只能从外部宿主机改变）<br>
+rw：readwrite</p>
+<pre><code>-v 卷名:容器内路径:ro/rw
+</code></pre>
+<p><strong>dockerfile</strong><br>
+用来构建docker镜像的构建文件。</p>
+<pre><code>FROM centos
+VOLUME [&quot;volume01&quot;,&quot;volume02&quot;]
+CMD echo &quot;---end---&quot;
+CMD /bin/bash
+</code></pre>
+<p><strong>数据卷容器</strong><br>
+共享容器之间的数据</p>
+<pre><code>docker02与docker01同步数据
+docker run -it --name docker01 my/centos:1.0
+docker run -it --name docker02 --volume-from docker01 my/centos:1.0
+</code></pre>
+<p><strong>Dockerfile指令</strong></p>
+<pre><code>FROM 基础镜像
+MAINTAINER 指定维护者信息
+RUN 镜像构建的时候运行命令
+ADD 步骤。比如添加一些压缩包
+WORKDIR 镜像的工作目录
+VOLUME 挂载的目录
+EXPOSE 指定对外端口
+CMD 指定启动时运行的命令
+COPY 类似ADD，将文件拷贝到镜像中
+ENV 构建是设置环境变量
+
+docker build -f mydockerfile -t my-centos:1.0 .
+docker history [镜像id] 显示镜像的所有制作过程步骤
+</code></pre>
+<h2 id="linux">linux</h2>
+<p>开机启动的程序，windows称为服务，linux称为守护进程。<br>
+ssh连接服务器</p>
+<pre><code>ssh root@ip -p port
+</code></pre>
+<p><strong>目录</strong></p>
+<ul>
+<li>/bin：放常用指令</li>
+<li>/boot：系统核心文件（不要动）</li>
+<li>/dev、/mnt：挂载一些东西</li>
+<li><code>/etc</code>：存放配置文件</li>
+<li><code>/home</code>：用户主目录，类似win的user</li>
+<li>/lib：类似win的dll文件（不要动）</li>
+<li><code>/opt</code>：额外安装软件的目录</li>
+<li>/proc：用户内存映射（不用管）</li>
+<li><code>/root</code>：超级管理员用户主目录</li>
+<li><code>/usr</code>：普通目录主目录（对比root、类似win的program files）</li>
+<li><code>/tmp</code>：用完即丢的、安装包等</li>
+<li><code>/var</code>：不断扩充的东西</li>
+</ul>
+<p><strong>文件夹</strong></p>
+<ul>
+<li>
+<p><code>pwd</code>：查看当前目录</p>
+</li>
+<li>
+<p>mkdir -p test/test1/test2：递归创建文件夹</p>
+</li>
+<li>
+<p>rmdir -p test：递归删除文件夹（所有）（包括父目录）</p>
+</li>
+<li>
+<p>cp a.js wenjianjia：拷贝文件到文件夹</p>
+</li>
+<li>
+<p>mv a.js wenjianjia：移动文件到文件夹</p>
+</li>
+<li>
+<p>rm -rf wenjianjia/*：强制递归删除（不包括父目录）</p>
+</li>
+</ul>
+<h2 id="sentry">Sentry</h2>
+<h2 id="jenkins">Jenkins</h2>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li><a href="#git">Git</a></li>
+<li><a href="#nginx">Nginx</a></li>
+<li><a href="#docker">Docker</a></li>
+<li><a href="#linux">linux</a></li>
+<li><a href="#sentry">Sentry</a></li>
+<li><a href="#jenkins">Jenkins</a></li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://shelter01.github.io/post/ji-suan-ji-wang-luo-zhi-shi-dian/">
+              <h3 class="post-title">
+                计算机网络（interview）
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  
+  <a class="rss" href="https://shelter01.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

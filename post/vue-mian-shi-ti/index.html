@@ -1,0 +1,859 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>vue（interview） | 谢尔特的小窝</title>
+<link rel="shortcut icon" href="https://shelter01.github.io/favicon.ico?v=1710687923650">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://shelter01.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="vue（interview） | 谢尔特的小窝 - Atom Feed" href="https://shelter01.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="vue的优缺点
+优点：渐进式、组件化、响应式数据、虚拟dom
+缺点：seo、首屏渲染、ie8以上
+v-if和v-show
+v-if切换时有一个局部编译/卸载的过程
+数据响应式原理
+数据劫持
+缺点：
+
+对象新增的属性无效，要通过 Vue 提供..." />
+    <meta name="keywords" content="面试相关" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://shelter01.github.io">
+  <img class="avatar" src="https://shelter01.github.io/images/avatar.png?v=1710687923650" alt="">
+  </a>
+  <h1 class="site-title">
+    谢尔特的小窝
+  </h1>
+  <p class="site-description">
+    个人项目和面试题记录
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              vue（interview）
+            </h2>
+            <div class="post-info">
+              <span>
+                2023-03-19
+              </span>
+              <span>
+                18 min read
+              </span>
+              
+                <a href="https://shelter01.github.io/tag/AmodHRYiW/" class="post-tag">
+                  # 面试相关
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h3 id="vue的优缺点">vue的优缺点</h3>
+<p>优点：渐进式、组件化、响应式数据、虚拟dom<br>
+缺点：seo、首屏渲染、ie8以上</p>
+<h3 id="v-if和v-show">v-if和v-show</h3>
+<p>v-if切换时有一个局部编译/卸载的过程</p>
+<h3 id="数据响应式原理">数据响应式原理</h3>
+<p>数据劫持<br>
+缺点：</p>
+<ul>
+<li>对象<code>新增的属性</code>无效，要通过 Vue 提供的 $set 和 $delete 方法设置。</li>
+<li>无法监听<code>数组的下标的变化</code>，但是vue内部重写了push等数组方法。</li>
+<li>不支持map和set等类型的对象</li>
+</ul>
+<p><code>vue3的proxy</code>解决了上述问题，但也需要深度遍历。</p>
+<p>收集依赖。（getter阶段）<br>
+data(){<br>
+count: 1<br>
+}<br>
+基础数据类型：track函数使用Dep（set集合）将count所影响到的effect函数收集起来，<br>
+trigger函数在count改变时通知通知所有的effect更新（循环Dep）。<br>
+对象：每个对象中，用map将对象的key与其专用的Dep关联起来。再执行其余操作。</p>
+<pre><code class="language-js">weakmap存储所有对象：
+(weakmap)-&gt;person(map)-&gt;name(set)-&gt;Dep
+// allMap存储所有obj
+allMap = new WeakMap()
+// objMap存储person的key
+allMap.set('person', objMap = new Map())
+// dep存储name的effect
+objMap.set(name, dep  = new Set())
+</code></pre>
+<p>定义activeEffect在effect执行时触发get自动收集依赖</p>
+<p>数据自动更新（setter阶段）<br>
+数据get前，执行track收集依赖（add或update依赖）<br>
+数据set后，执行trigger通知更新</p>
+<h3 id="组件初始化data">组件初始化data</h3>
+<ul>
+<li>初始化组件的initData时遍历执行defineProperty代理为<code>this.</code>可以直接访问<code>this.data.</code></li>
+<li>执行observe(data)，递归为每一个数据defineProperty绑定上读写监听（数组和对象分开处理）。</li>
+</ul>
+<h3 id="keep-alive原理">keep-alive原理</h3>
+<p>特点：</p>
+<ol>
+<li>是一个全局组件</li>
+<li>不会被渲染、不会出现在父组件链中</li>
+<li>包裹中的组件会缓存，而不是销毁</li>
+</ol>
+<pre><code class="language-js">&lt;keep-alive :include=&quot;whiteList&quot; :exclude=&quot;blackList&quot; :max=&quot;amount&quot;&gt;
+  &lt;component :is=&quot;currentComponent&quot;&gt;&lt;/component&gt;
+&lt;/keep-alive&gt;
+
+&lt;keep-alive :include=&quot;whiteList&quot; :exclude=&quot;blackList&quot; :max=&quot;amount&quot;&gt;
+  &lt;router-view&gt;&lt;/router-view&gt;
+&lt;/keep-alive&gt;
+</code></pre>
+<p>参数：</p>
+<ol>
+<li>include：传字符串、正则、数组。</li>
+<li>exclude：传字符串、正则、数组。</li>
+<li>max：传数字，限制最大缓存数，超过按LRU（最久未使用）置换。<br>
+在生命周期里做了什么：</li>
+<li>created：初始化cache<code>缓存组件的虚拟dom集合</code>，初始化keys<code>缓存组件的key集合</code>。</li>
+<li>mounted：<code>实时监听</code>include，exclude的变动，<code>更新</code></li>
+<li>destory：遍历cache，pruneCacheEntry函数销毁、<code>删除缓存的所有东西</code><br>
+pruneCacheEntry函数做的操作：执行所有缓存组件的$destroy，当前缓存的value内容置空，删除keys中的元素<br>
+render函数做的事：</li>
+<li>获得keep-alive包裹的第一个组件的组件名称。</li>
+<li>判断此组件名称、不是白名单或者是黑名单，不操作，否则继续。</li>
+<li>根据ID、tag生成缓存key，查找该组件<code>是否缓存</code>。若缓存，则直接<code>取出组件</code>，并根据LRU更新；若没缓存，则继续。</li>
+<li>将该组件加入到缓存，并踢出LRU最久未使用的。</li>
+<li>将此组件实例的keepAlive属性设置为true。</li>
+</ol>
+<blockquote>
+<p>渲染：如果组件上abstract为true，就跳过该组件的渲染。所以keep-alive不会被渲染到页面上</p>
+</blockquote>
+<h3 id="v-model原理">v-model原理</h3>
+<p>是语法糖</p>
+<pre><code>&lt;el-input v-model=&quot;foo&quot; /&gt;
+&lt;el-input :value=&quot;foo&quot; @input=&quot;foo = $event&quot; /&gt;
+</code></pre>
+<p>组件支持v-model，model可以自定义（在子组件中）。vue3中是modelValue</p>
+<pre><code>export default {
+  model: {
+    prop: 'value', // 可自定义
+    event: 'input' // 可自定义
+  }
+}
+</code></pre>
+<h3 id="自定义指令">自定义指令</h3>
+<p>指令定义函数提供了几个钩子函数（可选）：</p>
+<ul>
+<li>bind: 只调用一次，指令第一次绑定到元素时调用，可以定义一个在绑定时执行一次的初始化动作。</li>
+<li>inserted: 被绑定元素插入父节点时调用（父节点存在即可调用，不必存在于 document 中）。</li>
+<li>update: 被绑定元素所在的模板更新时调用，而不论绑定值是否变化。通过比较更新前后的绑定值。</li>
+<li>componentUpdated: 被绑定元素所在模板完成一次更新周期时调用。</li>
+<li>unbind: 只调用一次， 指令与元素解绑时调用。</li>
+</ul>
+<p>v-copy示例</p>
+<pre><code class="language-js">1.指令内部，copy.js
+const copy = {
+  bind(el, { value }) {
+    el.$value = value
+    el.handler = () =&gt; {
+      if (!el.$value) {
+        // 值为空的时候，给出提示。可根据项目UI仔细设计
+        console.log('无复制内容')
+        return
+      }
+      // 动态创建 textarea 标签
+      const textarea = document.createElement('textarea')
+      // 将该 textarea 设为 readonly 防止 iOS 下自动唤起键盘，同时将 textarea 移出可视区域
+      textarea.readOnly = 'readonly'
+      textarea.style.position = 'absolute'
+      textarea.style.left = '-9999px'
+      // 将要 copy 的值赋给 textarea 标签的 value 属性
+      textarea.value = el.$value
+      // 将 textarea 插入到 body 中
+      document.body.appendChild(textarea)
+      // 选中值并复制
+      textarea.select()
+      const result = document.execCommand('Copy')
+      if (result) {
+        console.log('复制成功') // 可根据项目UI仔细设计
+      }
+      document.body.removeChild(textarea)
+    }
+    // 绑定点击事件，就是所谓的一键 copy 啦
+    el.addEventListener('click', el.handler)
+  },
+  // 当传进来的值更新的时候触发
+  componentUpdated(el, { value }) {
+    el.$value = value
+  },
+  // 指令与元素解绑的时候，移除事件绑定
+  unbind(el) {
+    el.removeEventListener('click', el.handler)
+  },
+}
+export default copy
+
+2. 指令注册，directives/index.js 文件
+import copy from './copy'
+// 自定义指令
+const directives = {
+  copy,
+  longpress,
+}
+
+export default {
+  install(Vue) {
+    Object.keys(directives).forEach((key) =&gt; {
+      Vue.directive(key, directives[key])
+    })
+  },
+}
+
+3. 指令引入
+import Vue from 'vue'
+import Directives from './JS/directives'
+Vue.use(Directives)
+</code></pre>
+<h3 id="父子通信">父子通信</h3>
+<ol>
+<li>props</li>
+<li>$emit</li>
+<li>$ref</li>
+<li>parent/children</li>
+<li>eventBus</li>
+<li>provide/inject</li>
+<li>vuex</li>
+<li>localStorage</li>
+</ol>
+<h3 id="相同的路由组件如何重新渲染">相同的路由组件如何重新渲染？</h3>
+<p>添加key值</p>
+<pre><code class="language-js">const routes = [
+  {
+    path: &quot;/a&quot;,
+    component: MyComponent
+  },
+  {
+    path: &quot;/b&quot;,
+    component: MyComponent
+  },
+];
+
+&lt;template&gt;
+    &lt;router-view :key=&quot;$route.path&quot;&gt;&lt;/router-view&gt;
+&lt;/template&gt;
+</code></pre>
+<h3 id="vue和react对比">vue和react对比</h3>
+<p>相同：单项数据流、虚拟dom、ssr、组件化<br>
+不同：jsx和template、数据响应式和setState、事件双向绑定和单项绑定</p>
+<h3 id="data">data</h3>
+<ul>
+<li>data为什么是<code>函数</code>：希望组件复用而不是数据复用，类似闭包的作用。</li>
+<li>获取初始状态：<code>this.$options.data().xxx</code></li>
+<li>不需要响应式的数据：定义在data的return之外，<code>Object.freeze</code></li>
+</ul>
+<h3 id="为什么-watch-中能进行异步操作而-computed-不能">为什么 watch 中能进行异步操作而 computed 不能</h3>
+<ol>
+<li>computed有缓存，依赖响应式数据的变化</li>
+<li>定义的函数接收return的结果，return属于同步执行的，是没办法拿到异步请求结果的</li>
+</ol>
+<h3 id="虚拟dom和diff算法">虚拟dom和diff算法</h3>
+<ul>
+<li>虚拟dom：是一个描述真实dom的对象。</li>
+<li>diff算法：Diff算法是一种<code>对比算法</code>。对比两者是<code>旧虚拟DOM</code>和<code>新虚拟DOM</code>，对比出是哪个虚拟节点更改了，找出这个<code>虚拟节点</code>，并只更新这个虚拟节点所对应的<code>真实节点</code>，而不用更新其他数据没发生改变的节点，实现精准地更新真实DOM，进而提高效率。</li>
+</ul>
+<p><strong>diff算法的原理</strong><br>
+前提：当数据改变时，会触发<code>setter</code>，并且通过<code>Dep.notify</code>去通知所有<code>订阅者Watcher</code>，订阅者们就会调用<code>patch方法</code>，给真实DOM打补丁，更新相应的视图。</p>
+<ol>
+<li>patch方法，传入<code>新旧虚拟dom</code>，判断是否为同一类型的标签</li>
+</ol>
+<pre><code class="language-js">function patch(oldVnode, newVnode) {
+    // 比较是否为同一类型的节点
+    if (sameVnode(oldVnode, newVnode)) {
+        // 是：继续进行深层比较
+        patchVnode(oldVnode, newVnode)
+    } else {
+        // 创建新节点添加到父元素，并删除旧节点
+    }
+}
+</code></pre>
+<ol start="2">
+<li>sameVnode方法</li>
+</ol>
+<pre><code class="language-js">function sameVnode(oldVnode, newVnode) {
+  return (
+    oldVnode.key === newVnode.key &amp;&amp; // key值是否一样
+    oldVnode.tagName === newVnode.tagName &amp;&amp; // 标签名是否一样
+    oldVnode.isComment === newVnode.isComment &amp;&amp; // 是否都为注释节点
+    isDef(oldVnode.data) === isDef(newVnode.data) &amp;&amp; // 是否都定义了data
+    sameInputType(oldVnode, newVnode) // 当标签为input时，type必须是否相同
+  )
+}
+</code></pre>
+<ol start="3">
+<li>patchVnode方法</li>
+</ol>
+<ul>
+<li>找到对应的<code>真实DOM</code>，称为<code>el</code></li>
+<li>判断<code>newVnode</code>和<code>oldVnode</code>是否指向同一个对象，如果是，那么直接<code>return</code></li>
+<li>如果他们都有文本节点并且不相等，那么将<code>el</code>的文本节点设置为newVnode的文本节点。</li>
+<li>如果<code>oldVnode</code>有子节点而<code>newVnode</code>没有，则删除<code>el</code>的子节点</li>
+<li>如果<code>oldVnode</code>没有子节点而<code>newVnode</code>有，则将newVnode的子节点真实化之后添加到el</li>
+<li>如果两者都有子节点，则执行<code>updateChildren</code>函数比较子节点，这一步很重要</li>
+</ul>
+<pre><code class="language-js">function patchVnode(oldVnode, newVnode) {
+  const el = newVnode.el = oldVnode.el // 获取真实DOM对象
+  // 获取新旧虚拟节点的子节点数组
+  const oldCh = oldVnode.children, newCh = newVnode.children
+  // 如果新旧虚拟节点是同一个对象，则终止
+  if (oldVnode === newVnode) return
+  // 如果新旧虚拟节点是文本节点，且文本不一样
+  if (oldVnode.text !== null &amp;&amp; newVnode.text !== null &amp;&amp; oldVnode.text !== newVnode.text) {
+    // 则直接将真实DOM中文本更新为新虚拟节点的文本
+    api.setTextContent(el, newVnode.text)
+  } else {
+    // 否则
+    if (oldCh &amp;&amp; newCh &amp;&amp; oldCh !== newCh) {
+      // 新旧虚拟节点都有子节点，且子节点不一样
+      // 对比子节点，并更新
+      updateChildren(el, oldCh, newCh)
+    } else if (newCh) {
+      // 新虚拟节点有子节点，旧虚拟节点没有
+      // 创建新虚拟节点的子节点，并更新到真实DOM上去
+      createEle(newVnode)
+    } else if (oldCh) {
+      // 旧虚拟节点有子节点，新虚拟节点没有
+      //直接删除真实DOM里对应的子节点
+      api.removeChild(el)
+    }
+  }
+}
+</code></pre>
+<ol start="4">
+<li>updateChildren方法<br>
+patchVnode里最重要的一个方法。对比新旧虚拟节点的子节点。<br>
+<code>首尾指针法</code>：新旧子节点集合里都有两个指针。<br>
+五种情况：</li>
+</ol>
+<ul>
+<li>
+<ol>
+<li><code>oldS 和 newS</code>，sameVnode方法</li>
+</ol>
+</li>
+<li>
+<ol start="2">
+<li><code>oldS 和 newE</code>，sameVnode方法</li>
+</ol>
+</li>
+<li>
+<ol start="3">
+<li><code>oldE 和 newS</code>，sameVnode方法</li>
+</ol>
+</li>
+<li>
+<ol start="4">
+<li><code>oldE 和 newE</code>，sameVnode方法</li>
+</ol>
+</li>
+<li>
+<ol start="5">
+<li>如果以上逻辑都匹配不到，把所有旧子节点的 key 做一个映射到旧节点下标的 <code>key -&gt; index</code> 表，然后用新 <code>vnode 的 key</code> 去找出在旧节点中可以复用的位置。</li>
+</ol>
+</li>
+</ul>
+<p>重点：</p>
+<ol>
+<li>虚拟dom是一个描述真实dom的<code>对象</code>，diff算法是<code>对比新旧虚拟dom</code>，只更新这个<code>有所改动</code>的虚拟节点所对应的<code>真实节点</code>。</li>
+<li>数据改变-&gt;setter-&gt;dep.notify-&gt;watcher-&gt;patch。</li>
+<li><code>patch</code>传入<code>新旧虚拟dom</code>。<code>sameVnode</code>主要判断是否是同一个节点，是执行<code>patchVnode</code>，不是就新建。<code>patchVnode</code>中，两者都有子节点，触发<code>updateChildren</code>。<code>updateChildren</code>中，五种情况。</li>
+</ol>
+<h3 id="vue2和vue3的区别">vue2和vue3的区别</h3>
+<ul>
+<li>options api和composition api。</li>
+<li>reactive原理。
+<ol>
+<li>proxy递归代理</li>
+<li>深度响应</li>
+</ol>
+</li>
+<li>ref和reactive
+<ol>
+<li>ref需要.value，可接收基础和引用数据。</li>
+<li>reactive只能接受引用数据。</li>
+<li>ref底层还是基于reactive做的。</li>
+</ol>
+</li>
+<li>vue3比vue2快的原因
+<ol>
+<li>diff算法。新增了<code>静态标记</code>，能够让虚拟节点识别带有静态标记的节点对比内容进行改变。</li>
+<li>hoistStatic 静态提升。vue2.0中无论元素是否参与更新，都会重新创建，vue3.0中对于<code>不参与更新的元素，只会被创建一次</code>，之后会在每次渲染的时候被不停的复用。</li>
+<li>cacheHandlers<code>事件侦听器缓存</code>。默认情况下onClick会被视为动态绑定，每次都会追踪它的变化，vue3.0中直接进行缓存，复用。</li>
+</ol>
+</li>
+</ul>
+<h3 id="vue3-里为什么要用-proxy-api-替代-defineproperty-api">Vue3 里为什么要用 Proxy API 替代 defineProperty API</h3>
+<p>Vue2中采用 defineProperty来劫持整个对象，然后进行深度遍历所有属性，给每个属性添加 getter 和 setter，实现响应式。<br>
+缺点：</p>
+<ul>
+<li>检测不到对象属性的添加和删除</li>
+<li><code>数组API</code>方法无法监听到/<code>数组下标</code>操作无法监听到</li>
+<li>需要对每个属性进行遍历监听，如果嵌套对象，需要<code>深层监听</code>，造成性能问题</li>
+</ul>
+<p>Vue3 采用的 Proxy 的监听是针对<code>一个对象</code>的，那么对这个对象的所有操作会进入监听操作。</p>
+<ul>
+<li>Object.defineProperty 只能遍历对象属性进行劫持</li>
+<li>Proxy 直接可以劫持整个对象，并返回一个新对象，我们可以<code>只操作新的对象</code>达到响应式目的</li>
+<li>Proxy 可以直接监听<code>数组的变化</code>（push、shift、splice）</li>
+<li>Proxy 有多达<code>13种拦截方法</code>,不限于apply、ownKeys、deleteProperty、has等等，这是Object.defineProperty不具备的</li>
+</ul>
+<h3 id="watcheffect">watchEffect</h3>
+<ul>
+<li><code>watchEffect</code>可以自动监听数据源作为依赖。不用指明监视哪个数据，监视的回调中用到哪个数据，那就监视哪个数据。</li>
+<li><code>watchEffect</code>有点像 <code>computed</code> ：
+<ol>
+<li>但 <code>computed</code> 注重的计算出来的值（回调函数的返回值）， 所以必须要写返回值。</li>
+<li>而 <code>watcheffect</code>注重的是过程（回调函数的函数体），所以不用写返回值。</li>
+</ol>
+</li>
+</ul>
+<h2 id="vue3-中v-if-和-v-for-的优先级哪个高">Vue3 中，<strong><strong>v-if 和 v-for 的优先级哪个高？</strong></strong></h2>
+<p>在 <code>vue2</code> 中 <code>v-for</code> 的优先级更高，但是在 <code>vue3</code> 中优先级改变了。<code>v-if</code> 的优先级更高。</p>
+<h3 id="script-setup-是什么有什么好处">script setup 是什么，有什么好处?</h3>
+<ul>
+<li>3.2版本之后出现的语法糖</li>
+<li>写法简单，无需export暴露函数、引入组件会<code>自动注册</code>、<code>defineEmits</code>、<code>defineExpose</code>、<code>defineProps</code>。</li>
+</ul>
+<h3 id="pinia的一些优点">pinia的一些优点</h3>
+<ol>
+<li>有多个store。</li>
+<li>只有state、actions、getters。</li>
+<li>支持composition api语法。</li>
+<li>支持ts。</li>
+</ol>
+<h3 id="nexttick原理">nextTick原理</h3>
+<blockquote>
+<p>在下次 DOM 更新循环结束之后执行延迟回调。在修改数据之后立即使用这个方法，获取更新后的 DOM。<br>
+由于Vue更新DOM是异步的，会缓存一系列操作。主要用于赋值后需要<code>立即查看</code>数据的</p>
+</blockquote>
+<p>收集callback的函数</p>
+<pre><code class="language-js">const callbacks = []
+let pending = false
+let timerFunc
+
+export function nextTick (cb?: Function, ctx?: Object) {
+  let _resolve
+  callbacks.push(() =&gt; {
+    if (cb) {
+      try {
+        cb.call(ctx)
+      } catch (e) {
+        handleError(e, ctx, 'nextTick')
+      }
+    } else if (_resolve) {
+      _resolve(ctx)
+    }
+  })
+  if (!pending) {
+    pending = true
+    timerFunc()
+  }
+  // $flow-disable-line
+  if (!cb &amp;&amp; typeof Promise !== 'undefined') {
+    return new Promise(resolve =&gt; {
+      _resolve = resolve
+    })
+  }
+}
+</code></pre>
+<p>尝试使用原生的Promise.then、MutationObserver和setImmediate，上述三个都不支持最后使用setTimeout</p>
+<pre><code class="language-js">export let isUsingMicroTask = false
+if (typeof Promise !== 'undefined' &amp;&amp; isNative(Promise)) {
+  //判断1：是否原生支持Promise
+  const p = Promise.resolve()
+  timerFunc = () =&gt; {
+    p.then(flushCallbacks)
+    if (isIOS) setTimeout(noop)
+  }
+  isUsingMicroTask = true
+} else if (!isIE &amp;&amp; typeof MutationObserver !== 'undefined' &amp;&amp; (
+  isNative(MutationObserver) ||
+  MutationObserver.toString() === '[object MutationObserverConstructor]'
+)) {
+  //判断2：是否原生支持MutationObserver
+  let counter = 1
+  const observer = new MutationObserver(flushCallbacks)
+  const textNode = document.createTextNode(String(counter))
+  observer.observe(textNode, {
+    characterData: true
+  })
+  timerFunc = () =&gt; {
+    counter = (counter + 1) % 2
+    textNode.data = String(counter)
+  }
+  isUsingMicroTask = true
+} else if (typeof setImmediate !== 'undefined' &amp;&amp; isNative(setImmediate)) {
+  //判断3：是否原生支持setImmediate
+  timerFunc = () =&gt; {
+    setImmediate(flushCallbacks)
+  }
+} else {
+  //判断4：上面都不行，直接用setTimeout
+  timerFunc = () =&gt; {
+    setTimeout(flushCallbacks, 0)
+  }
+}
+</code></pre>
+<p>最终的flushCallbacks（复制callback数组，callback置空，执行所有复制出来的callback）</p>
+<pre><code>function flushCallbacks () {
+  pending = false
+  const copies = callbacks.slice(0)
+  callbacks.length = 0
+  for (let i = 0; i &lt; copies.length; i++) {
+    copies[i]()
+  }
+}
+</code></pre>
+<h3 id="vuex的原理">vuex的原理</h3>
+<ul>
+<li>state、getter、mutation、action、module</li>
+<li>mapState、mapGetter、mapMutations、mapAction</li>
+</ul>
+<p>利用了全局混入mixin，将store对象混入到每个vue实例中</p>
+<pre><code class="language-js">import Vue from 'vue'
+// 全局混入
+Vue.mixin({
+  created () {
+      console.log(1)
+  }
+})
+
+// 之后创建的Vue实例，都会输出1
+const a = new Vue({
+  // 输出1
+})
+const b = new Vue({
+  // 输出1
+})
+</code></pre>
+<p><code>可实现</code>方案</p>
+<ul>
+<li>在install阶段将this.<span class="katex"><span class="katex-mathml"><math><semantics><mrow><mi>s</mi><mi>t</mi><mi>o</mi><mi>r</mi><mi>e</mi><mo>=</mo><mi>t</mi><mi>h</mi><mi>i</mi><mi>s</mi><mi mathvariant="normal">.</mi></mrow><annotation encoding="application/x-tex">store = this.</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.61508em;vertical-align:0em;"></span><span class="mord mathdefault">s</span><span class="mord mathdefault">t</span><span class="mord mathdefault">o</span><span class="mord mathdefault" style="margin-right:0.02778em;">r</span><span class="mord mathdefault">e</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span><span class="mrel">=</span><span class="mspace" style="margin-right:0.2777777777777778em;"></span></span><span class="base"><span class="strut" style="height:0.69444em;vertical-align:0em;"></span><span class="mord mathdefault">t</span><span class="mord mathdefault">h</span><span class="mord mathdefault">i</span><span class="mord mathdefault">s</span><span class="mord">.</span></span></span></span>options.store挂在到全局</li>
+<li>store也是新建一个vue对象（存疑）</li>
+<li>创建Store类时，将getter、mutation等绑定到this上。也会有一些defineProperty等实现</li>
+</ul>
+<h3 id="vue-router以及路由">vue-router以及路由</h3>
+<p>beforeEach：to、from、next<br>
+afterEach：to、from<br>
+路由导航流程：<br>
+简化版：</p>
+<ol>
+<li>离开当前路由 beforeRouteEnter</li>
+<li>全局路由 beforeEach</li>
+<li>去到的路由 beforeRouteEnter</li>
+<li>全局 beforeResolve</li>
+<li>全局 afterEach</li>
+<li>DOM 更新</li>
+<li>调用 beforeRouteEnter 中传入的 next 回调函数</li>
+</ol>
+<h3 id="routerpush-routerreplace-routergo的区别">router.push、router.replace、router.go的区别</h3>
+<ul>
+<li>router.push：跳转，并向history栈中加一个记录，可以后退到上一个页面</li>
+<li>router.replace：跳转，不会向history栈中加一个记录，不可以后退到上一个页面</li>
+<li>router.go：传正数向前跳转，传负数向后跳转</li>
+</ul>
+<h3 id="vue-router原理">vue-router原理</h3>
+<ul>
+<li>install：mixin混入this.$router至全局</li>
+<li>createRouteMap方法：将routes数组转成map结构（key(path):value(comp)）</li>
+</ul>
+<pre><code class="language-html">&lt;!-- 定义路由 --&gt;
+&lt;li&gt;&lt;a href=&quot;#/home&quot;&gt;home&lt;/a&gt;&lt;/li&gt;
+&lt;li&gt;&lt;a href=&quot;#/about&quot;&gt;about&lt;/a&gt;&lt;/li&gt;
+&lt;!-- 渲染路由对应的 UI --&gt;
+&lt;div id=&quot;routeView&quot;&gt;&lt;/div&gt;
+</code></pre>
+<p><code>hash</code>：</p>
+<ul>
+<li>改变url中的hash部分不会刷新页面</li>
+<li>hashchange时切换组件、页面初始时特殊处理</li>
+</ul>
+<pre><code class="language-js">let routerView = routeView
+window.addEventListener('hashchange', ()=&gt;{
+    let hash = location.hash;
+    routerView.innerHTML = hash
+})
+window.addEventListener('DOMContentLoaded', ()=&gt;{
+    if (!location.hash){ // 如果不存在hash值，那么重定向到#/
+        location.hash=&quot;/&quot;
+    } else { // 如果存在hash值，那就渲染对应UI
+        let hash = location.hash;
+        routerView.innerHTML = hash
+    }
+})
+</code></pre>
+<p><code>history</code>：</p>
+<ul>
+<li>pushState和replaceState不会刷新页面</li>
+<li>前进后退触发popstate切换组件</li>
+<li>获取'a[href]'标签、拦截原操作、添加click切换组件逻辑</li>
+</ul>
+<pre><code class="language-js">let routerView = routeView
+window.addEventListener('DOMContentLoaded', onLoad)
+window.addEventListener('popstate', ()=&gt;{
+    routerView.innerHTML = location.pathname
+})
+function onLoad () {
+    routerView.innerHTML = location.pathname
+    var linkList = document.querySelectorAll('a[href]')
+    linkList.forEach(el =&gt; el.addEventListener('click', function (e) {
+        e.preventDefault()
+        history.pushState(null, '', el.getAttribute('href'))
+        routerView.innerHTML = location.pathname
+    }))
+}
+</code></pre>
+<h3 id="性能优化">性能优化</h3>
+<ol>
+<li>v-for设置key
+<ul>
+<li>帮助diff算法根据key值做新旧节点的比对</li>
+</ul>
+</li>
+<li>模块化、组件化
+<ul>
+<li>封装高复用的模块（http请求）</li>
+<li>组件可配置性强</li>
+</ul>
+</li>
+<li>路由懒加载</li>
+</ol>
+<pre><code class="language-js">const routes = [
+    {
+        path: '/',
+        name: 'Home',
+        component: Home
+    },
+    {
+        path: '/courses',
+        name: 'Courses',
+        component: () =&gt; import('../views/Courses.vue')
+    }
+]
+</code></pre>
+<ol start="4">
+<li>关闭productionSourceMap，开启productionGzip</li>
+<li>keep-alive</li>
+<li>图片cdn、图片懒加载</li>
+<li><code>骨架屏</code>，loading动画</li>
+<li>编码阶段
+<ul>
+<li>减少data里的数据（减少watcher）或者使用Object.freeze()</li>
+<li>v-if和v-for不要连用，v-for的id</li>
+<li>路由懒加载、异步组件</li>
+<li>防抖、节流</li>
+<li>第三方模块按需引入</li>
+</ul>
+</li>
+<li>搜索引擎seo、预渲染、ssr</li>
+<li>打包优化
+<ul>
+<li>压缩代码</li>
+<li>tree shaking</li>
+<li>cdn第三方模块</li>
+<li>多线程打包</li>
+<li>splitChunks抽离公共文件</li>
+<li>sourceMap优化</li>
+</ul>
+</li>
+<li>渐进式渲染（v-if=&quot;defer(n)&quot;触发）</li>
+</ol>
+<pre><code class="language-js">export default function (count = 10) {
+  return {
+    data() {
+      return {
+        displayPriority: 0,
+      }
+    },
+    mounted() {
+      this.runDisplayPriority()
+    },
+    methods: {
+      runDisplayPriority() {
+        const step = () =&gt; {
+          requestAnimationFrame(() =&gt; {
+            this.displayPriority++
+            if (this.displayPriority &lt; count) {
+              step()
+            }
+          })
+        }
+        step()
+      },
+      defer(priority) {
+        return this.displayPriority &gt;= priority
+      },
+    },
+  }
+}
+</code></pre>
+<h3 id="slot插槽原理">slot插槽原理</h3>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#vue%E7%9A%84%E4%BC%98%E7%BC%BA%E7%82%B9">vue的优缺点</a></li>
+<li><a href="#v-if%E5%92%8Cv-show">v-if和v-show</a></li>
+<li><a href="#%E6%95%B0%E6%8D%AE%E5%93%8D%E5%BA%94%E5%BC%8F%E5%8E%9F%E7%90%86">数据响应式原理</a></li>
+<li><a href="#%E7%BB%84%E4%BB%B6%E5%88%9D%E5%A7%8B%E5%8C%96data">组件初始化data</a></li>
+<li><a href="#keep-alive%E5%8E%9F%E7%90%86">keep-alive原理</a></li>
+<li><a href="#v-model%E5%8E%9F%E7%90%86">v-model原理</a></li>
+<li><a href="#%E8%87%AA%E5%AE%9A%E4%B9%89%E6%8C%87%E4%BB%A4">自定义指令</a></li>
+<li><a href="#%E7%88%B6%E5%AD%90%E9%80%9A%E4%BF%A1">父子通信</a></li>
+<li><a href="#%E7%9B%B8%E5%90%8C%E7%9A%84%E8%B7%AF%E7%94%B1%E7%BB%84%E4%BB%B6%E5%A6%82%E4%BD%95%E9%87%8D%E6%96%B0%E6%B8%B2%E6%9F%93">相同的路由组件如何重新渲染？</a></li>
+<li><a href="#vue%E5%92%8Creact%E5%AF%B9%E6%AF%94">vue和react对比</a></li>
+<li><a href="#data">data</a></li>
+<li><a href="#%E4%B8%BA%E4%BB%80%E4%B9%88-watch-%E4%B8%AD%E8%83%BD%E8%BF%9B%E8%A1%8C%E5%BC%82%E6%AD%A5%E6%93%8D%E4%BD%9C%E8%80%8C-computed-%E4%B8%8D%E8%83%BD">为什么 watch 中能进行异步操作而 computed 不能</a></li>
+<li><a href="#%E8%99%9A%E6%8B%9Fdom%E5%92%8Cdiff%E7%AE%97%E6%B3%95">虚拟dom和diff算法</a></li>
+<li><a href="#vue2%E5%92%8Cvue3%E7%9A%84%E5%8C%BA%E5%88%AB">vue2和vue3的区别</a></li>
+<li><a href="#vue3-%E9%87%8C%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E7%94%A8-proxy-api-%E6%9B%BF%E4%BB%A3-defineproperty-api">Vue3 里为什么要用 Proxy API 替代 defineProperty API</a></li>
+<li><a href="#watcheffect">watchEffect</a></li>
+</ul>
+</li>
+<li><a href="#vue3-%E4%B8%ADv-if-%E5%92%8C-v-for-%E7%9A%84%E4%BC%98%E5%85%88%E7%BA%A7%E5%93%AA%E4%B8%AA%E9%AB%98">Vue3 中，<strong><strong>v-if 和 v-for 的优先级哪个高？</strong></strong></a>
+<ul>
+<li><a href="#script-setup-%E6%98%AF%E4%BB%80%E4%B9%88%E6%9C%89%E4%BB%80%E4%B9%88%E5%A5%BD%E5%A4%84">script setup 是什么，有什么好处?</a></li>
+<li><a href="#pinia%E7%9A%84%E4%B8%80%E4%BA%9B%E4%BC%98%E7%82%B9">pinia的一些优点</a></li>
+<li><a href="#nexttick%E5%8E%9F%E7%90%86">nextTick原理</a></li>
+<li><a href="#vuex%E7%9A%84%E5%8E%9F%E7%90%86">vuex的原理</a></li>
+<li><a href="#vue-router%E4%BB%A5%E5%8F%8A%E8%B7%AF%E7%94%B1">vue-router以及路由</a></li>
+<li><a href="#routerpush-routerreplace-routergo%E7%9A%84%E5%8C%BA%E5%88%AB">router.push、router.replace、router.go的区别</a></li>
+<li><a href="#vue-router%E5%8E%9F%E7%90%86">vue-router原理</a></li>
+<li><a href="#%E6%80%A7%E8%83%BD%E4%BC%98%E5%8C%96">性能优化</a></li>
+<li><a href="#slot%E6%8F%92%E6%A7%BD%E5%8E%9F%E7%90%86">slot插槽原理</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://shelter01.github.io/post/mian-shi-ti-ji-lu/">
+              <h3 class="post-title">
+                javascript（interview）
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  
+  <a class="rss" href="https://shelter01.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

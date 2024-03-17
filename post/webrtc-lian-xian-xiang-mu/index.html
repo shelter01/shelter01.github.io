@@ -1,0 +1,346 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>项目总结（interview） | 谢尔特的小窝</title>
+<link rel="shortcut icon" href="https://shelter01.github.io/favicon.ico?v=1710687923650">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://shelter01.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="项目总结（interview） | 谢尔特的小窝 - Atom Feed" href="https://shelter01.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="导播连线（服务端合成流）：
+背景：
+
+用户需要基于我们sass云平台的导播台，实现多人视频通话功能。
+导播台是一个实时制作直播流的项目，可以将多个输入源（推流、拉流、图片等）叠加成一个输出源画面，提供拉流地址给到c端观看直播。
+导播连线的项..." />
+    <meta name="keywords" content="项目记录" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://shelter01.github.io">
+  <img class="avatar" src="https://shelter01.github.io/images/avatar.png?v=1710687923650" alt="">
+  </a>
+  <h1 class="site-title">
+    谢尔特的小窝
+  </h1>
+  <p class="site-description">
+    个人项目和面试题记录
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              项目总结（interview）
+            </h2>
+            <div class="post-info">
+              <span>
+                2023-04-14
+              </span>
+              <span>
+                6 min read
+              </span>
+              
+                <a href="https://shelter01.github.io/tag/vMKmCWzgl/" class="post-tag">
+                  # 项目记录
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h3 id="导播连线服务端合成流">导播连线（服务端合成流）：</h3>
+<p>背景：</p>
+<ol>
+<li>用户需要基于我们sass云平台的<code>导播台</code>，实现多人<code>视频通话</code>功能。</li>
+<li>导播台是一个<code>实时制作直播流</code>的项目，可以将<code>多个</code>输入源（推流、拉流、图片等）叠加成<code>一个输出源</code>画面，<code>提供拉流地址</code>给到c端观看直播。</li>
+<li>导播连线的项目就是将<code>web端采集</code>到的音视频流，推流到导播台的<code>一路输入源</code>中。一路推本地，一路拉mcu。既能看到用户自己采集的画面，又能看到服务端合成后的mcu流。</li>
+</ol>
+<p><strong>推流</strong><br>
+获取音视频流：</p>
+<ul>
+<li><code>getUserMedia</code>获取音视频流。</li>
+<li>参数中<code>aspectRatio</code>控制16/9或者9/16的比例。</li>
+<li><code>facingMode</code>控制前后置摄像头，更换前后置时需注意断开流。</li>
+<li><code>deviceId</code>可以获取指定音视频设备的流、切换设备时用。</li>
+</ul>
+<pre><code class="language-js">navigator.mediaDevices.getUserMedia({
+    video: {
+        aspectRatio: 16 / 9,
+        facingMode: 'user',
+        deviceId: ''
+    },
+    audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: false
+    }
+})
+
+stream.getVideoTracks()[0].stop()
+</code></pre>
+<p>创建canvas：</p>
+<ol>
+<li>根据视频的宽高大小、比例创建canvas画布。</li>
+<li><code>captureStream</code>将canvas转为mediaStream。</li>
+<li>mediaStream转换为HTMLVideoElement，作为<code>drawImage</code> 的参数。</li>
+</ol>
+<pre><code class="language-js">const canvas = document.createElement('canvas')
+const context2d = canvas.getContext('2d')
+const canvasToStream = canvas.captureStream(25)
+
+// mediaStream转换为HTMLVideoElement
+const htmlVideo = document.createElement('video')
+htmlVideo.autoplay = true
+htmlVideo.onloadedmetadata = () =&gt; {
+    htmlVideo.muted = true
+}
+htmlVideo.srcObject = stream
+</code></pre>
+<p>canvas画图：</p>
+<ol>
+<li>requestAnimationFrame API在某些设备的兼容性有问题，主线程里后台定时器和requestAnimationFrame都会休眠。所以采用webworker+setTimeout实现canvas的帧绘制。</li>
+<li>镜像问题。ios的微信不适配。（可能是canvas+setTimeout性能问题）</li>
+</ol>
+<pre><code class="language-js">// 移动位置后，坐标位置都会在当前视频的左上角。先到坐标(width, 0)，再相对x=width翻转图片
+canvas.context2d.translate(width, 0)
+canvas.context2d.scale(-1, 1)
+</code></pre>
+<p>WebSocket推流通信：</p>
+<ol>
+<li>连接服务器，在onopen、onmessage、onclose、onerror中定义推流的一些规则（推流时机、交换sdp、断开连接的规则等）。</li>
+<li>发送本地的sdp信息（推流过程见下一步）</li>
+<li>接收服务端传过来的sdp，<code>setRemoteDescription</code>设置远程sdp信息</li>
+</ol>
+<pre><code class="language-js">pc.setRemoteDescription(new RTCSessionDescription(sdp))
+</code></pre>
+<p>WebRTC推流：</p>
+<ol>
+<li><code>RTCPeerConnection</code>创建一个由本地计算机到远端的 WebRTC 连接实例（pc）。</li>
+<li><code>addTrack</code>将音视频轨道添加进pc中。</li>
+<li><code>contHint</code>可以设置一些轨道内容类型、影响传输的策略。</li>
+<li><code>replaceTrack</code>或者<code>removeTrack + addTrack</code>定义替换轨道的方法。例如前后置摄像头（因为视频轨道由canvas合成，因此仅替换音频轨道即可，但切换stream时需更新canvas的视频轨道）。其中很重要的一点是就得mediaStream更换前需将<code>旧stream停止</code>。</li>
+<li><code>createOffer</code>创建一个SDP offer，目的是启动一个新的 WebRTC 去连接远程端点。<code>setLocalDescription</code>将offer设置进本地sdp中，发送给服务端。</li>
+<li>接收到服务端的sdp后<code>setRemoteDescription</code>设置远程sdp。</li>
+<li>一旦SDP的交换和设置完成，WebRTC会自动建立ICE连接（候选地址的协商），并开始传输媒体流。</li>
+</ol>
+<pre><code class="language-js">// peerConnection
+const pc = new RTCPeerConnection()
+stream.getTracks().forEach((track) =&gt; {
+    pc.addTrack(track)
+})
+// local sdp
+const offer = await state.pc.createOffer()
+pc.setLocalDescription(offer)
+// 设置服务端传来的sdp
+pc.setRemoteDescription(sdp)
+</code></pre>
+<p>WebSocket通信，交换消息，等一些业务操作。</p>
+<p>WebSocket拉流：</p>
+<ol>
+<li><code>RTCPeerConnection</code>创建一个由本地计算机到远端的 WebRTC 连接实例（pc）。</li>
+<li>获取播放器dom元素<code>videoElement</code>，在pc的<code>onaddstream</code>或者<code>onaddtrack</code>钩子初始化播放器。</li>
+<li>接收到服务端的sdp后<code>setRemoteDescription</code>设置远程sdp。</li>
+</ol>
+<pre><code class="language-js">const videoElement = document.getElementById(videoId)
+const  pc = new RTCPeerConnection()
+
+pc.onaddstream = (event) =&gt; {
+    videoElement.srcObject = event.stream
+}
+// 设置服务端传来的sdp
+pc.setRemoteDescription(sdp)
+// 设置local sdp
+const answer = pc.createAnswer()
+pc.setLocalDescription(answer)
+</code></pre>
+<p>流处理的一些点：</p>
+<pre><code class="language-js">// 音视频开关（关闭麦克风为例）
+const audioTracks = lcps.stream.getAudioTracks()
+audioTracks.forEach((track) =&gt; {
+    track.enabled = false
+})
+</code></pre>
+<p>翻页以及mcu画面的调节、蒙层的调节、本地视频的调节、音量名称的调整、自动播放的处理、本地视频静音、横屏适配等问题、指挥台mcu音量调节。</p>
+<p><strong>碰到的问题</strong>：</p>
+<ol>
+<li>webrtc推流通信的过程异常、重连机制</li>
+</ol>
+<blockquote>
+<p>问题：<code>网络</code>的不稳定性等诸多情况会导致断线情况<br>
+方案：需要ice状态异常的情况下socket通知后端，后重新建立socket去重连。重连的机制设置<code>最大次数</code>、重试时间间隔（递增或者保持不动）。</p>
+</blockquote>
+<ol start="2">
+<li>后台推流问题</li>
+</ol>
+<blockquote>
+<p>问题：由于前端需要<code>合成</code>画面（<code>镜像</code>流），用到canvas。<code>requestAnimationFrame</code>在后台存在<code>休眠</code>问题，需要支持网页<code>后台推流</code>的需求。<br>
+方案：可考虑electron的桌面端、最终还是用到了webworker（不会休眠），setInterval在某些苹果机型有问题，所以用到了setTimeout。</p>
+</blockquote>
+<ol start="3">
+<li>浏览器兼容性问题</li>
+</ol>
+<blockquote>
+<p>问题：拒绝麦克风权限、浏览器不支持getUserMedia、<code>浏览器API</code>不统一等问题<br>
+方案：拒绝权限需要提示（<code>浏览器端</code>手动打开、<code>微信</code>退出重进），adaplerjs统一各API，小米浏览器不支持getUsermedia给出提示</p>
+</blockquote>
+<ol start="4">
+<li>苹果手机自动播放的问题</li>
+</ol>
+<blockquote>
+<p>问题：某些苹果设备禁止自动播放，需要手动交互<br>
+方案：<code>video.pause</code>状态去判断是否播放，未播放需要给到用户交互按钮</p>
+</blockquote>
+<ol start="5">
+<li>设置弱网策略</li>
+</ol>
+<blockquote>
+<p>问题：由于弱网环境帧率和分辨率不可兼得<br>
+方案：保帧率和保分辨率模式，要么画面卡，要么画面糊</p>
+</blockquote>
+<p>facingMode等切换流配置的问题，需要track.stop()<br>
+基于坑位的布局（原先基于翻页）、grid布局更加灵活</p>
+<p>合成音频的原理<br>
+throw err会拦截await后面的操作</p>
+<p><strong>项目优化</strong></p>
+<h3 id="讲师推流客户端合成流">讲师推流（客户端合成流）</h3>
+<ul>
+<li>将客户端采集到的摄像头、麦克风、屏幕共享及其音频流<code>混成一路流</code>推给服务端、最终给到c端移动端直播流</li>
+<li><code>三路</code>lps流实现连线功能。第一路就是原先讲师混的一路流，第二路是讲师单独给学生a推的音频流（仅讲师的音频），第三路是学生a推给讲师的音频流（仅学生a的音频、需要合到第一路中）</li>
+<li>一些其他的聊天、白板功能</li>
+</ul>
+<p><strong>项目优化</strong></p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#%E5%AF%BC%E6%92%AD%E8%BF%9E%E7%BA%BF%E6%9C%8D%E5%8A%A1%E7%AB%AF%E5%90%88%E6%88%90%E6%B5%81">导播连线（服务端合成流）：</a></li>
+<li><a href="#%E8%AE%B2%E5%B8%88%E6%8E%A8%E6%B5%81%E5%AE%A2%E6%88%B7%E7%AB%AF%E5%90%88%E6%88%90%E6%B5%81">讲师推流（客户端合成流）</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://shelter01.github.io/post/vue3-zhong-de-ts-bi-ji/">
+              <h3 class="post-title">
+                vue3（笔记）
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  
+  <a class="rss" href="https://shelter01.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

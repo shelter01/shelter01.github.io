@@ -1,0 +1,193 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>音视频（笔记） | 谢尔特的小窝</title>
+<link rel="shortcut icon" href="https://shelter01.github.io/favicon.ico?v=1710687923650">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://shelter01.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="音视频（笔记） | 谢尔特的小窝 - Atom Feed" href="https://shelter01.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="rtmp直播是单向的，webrtc是双向的
+媒体协商：是指在建立 WebRTC 连接时，对要传输的媒体流进行协商和约定的过程。
+
+sdp交换：SDP 包含媒体流的参数、编解码器配置等信息
+ice协商：确定对等连接的网络地址和传输路径
+网络协..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://shelter01.github.io">
+  <img class="avatar" src="https://shelter01.github.io/images/avatar.png?v=1710687923650" alt="">
+  </a>
+  <h1 class="site-title">
+    谢尔特的小窝
+  </h1>
+  <p class="site-description">
+    个人项目和面试题记录
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              音视频（笔记）
+            </h2>
+            <div class="post-info">
+              <span>
+                2023-05-21
+              </span>
+              <span>
+                1 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <h3 id="rtmp直播是单向的webrtc是双向的">rtmp直播是单向的，webrtc是双向的</h3>
+<p>媒体协商：是指在建立 WebRTC 连接时，对要传输的媒体流进行协商和约定的过程。</p>
+<ol>
+<li>sdp交换：SDP 包含媒体流的参数、编解码器配置等信息</li>
+<li>ice协商：确定对等连接的网络地址和传输路径<br>
+网络协商：媒体协商之后，建立数据通道时对网络传输参数进行协商和优化的过程。</li>
+<li>STUN：设备向 STUN 服务器发送请求，服务器会返回设备所使用的公网地址和端口信息。</li>
+<li>TURN:  当设备无法直接通信时，它可以将数据发送到 TURN 服务器，然后由 TURN 服务器转发给目标设备。TURN 服务器充当中继，使得设备可以绕过防火墙和 NAT。</li>
+</ol>
+<h3 id="多方通信的架构">多方通信的架构</h3>
+<p>mcu：各端发送到服务器混流。<br>
+sfu：服务器只负责转发，客户端接收到多路流。</p>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#rtmp%E7%9B%B4%E6%92%AD%E6%98%AF%E5%8D%95%E5%90%91%E7%9A%84webrtc%E6%98%AF%E5%8F%8C%E5%90%91%E7%9A%84">rtmp直播是单向的，webrtc是双向的</a></li>
+<li><a href="#%E5%A4%9A%E6%96%B9%E9%80%9A%E4%BF%A1%E7%9A%84%E6%9E%B6%E6%9E%84">多方通信的架构</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://shelter01.github.io/post/webrtc-lian-xian-xiang-mu/">
+              <h3 class="post-title">
+                项目总结（interview）
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  
+  <a class="rss" href="https://shelter01.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

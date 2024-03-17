@@ -1,0 +1,344 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>性能优化 | 谢尔特的小窝</title>
+<link rel="shortcut icon" href="https://shelter01.github.io/favicon.ico?v=1710687923650">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://shelter01.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="性能优化 | 谢尔特的小窝 - Atom Feed" href="https://shelter01.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="
+从输入url到页面加载完成，发生了什么
+
+
+DNS 解析
+TCP 连接
+HTTP 请求抛出
+服务端处理请求，HTTP 响应返回
+浏览器拿到响应数据，解析响应内容，把解析的结果展示给用户
+
+网络层面
+DNS解析、TCP连接（前端很难影响）
+..." />
+    <meta name="keywords" content="" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://shelter01.github.io">
+  <img class="avatar" src="https://shelter01.github.io/images/avatar.png?v=1710687923650" alt="">
+  </a>
+  <h1 class="site-title">
+    谢尔特的小窝
+  </h1>
+  <p class="site-description">
+    个人项目和面试题记录
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              性能优化
+            </h2>
+            <div class="post-info">
+              <span>
+                2024-03-01
+              </span>
+              <span>
+                5 min read
+              </span>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <blockquote>
+<p>从输入url到页面加载完成，发生了什么</p>
+</blockquote>
+<ol>
+<li>DNS 解析</li>
+<li>TCP 连接</li>
+<li>HTTP 请求抛出</li>
+<li>服务端处理请求，HTTP 响应返回</li>
+<li>浏览器拿到响应数据，解析响应内容，把解析的结果展示给用户</li>
+</ol>
+<h3 id="网络层面">网络层面</h3>
+<p>DNS解析、TCP连接（前端很难影响）</p>
+<p><code>HTTP请求/响应</code>方向</p>
+<ul>
+<li>减少请求次数</li>
+<li>减少单次请求花费的时间</li>
+</ul>
+<p>webpack的优化方案：<br>
+<strong>构建提速策略</strong></p>
+<ol>
+<li>babel用include和exclude避免不需要的转译（<code>重点</code>）</li>
+</ol>
+<pre><code class="language-js">// 开启缓存转译结果，提速
+loader: 'babel-loader?cacheDirectory=true'
+</code></pre>
+<ol start="2">
+<li>处理第三方库，DllPlugin避免重复打包</li>
+</ol>
+<pre><code class="language-js">new webpack.DllPlugin({
+    // DllPlugin的name属性需要和libary保持一致
+    name: '[name]_[hash]',
+    path: path.join(__dirname, 'dist', '[name]-manifest.json'),
+    // context需要和webpack.config.js保持一致
+    context: __dirname,
+}),
+</code></pre>
+<ol start="3">
+<li>Happypack开启loader的多线程，提升打包效率（<code>重点</code>）</li>
+</ol>
+<pre><code class="language-js">// 手动创建进程池
+const happyThreadPool =  HappyPack.ThreadPool({ size: os.cpus().length })
+new HappyPack({
+    id: 'happyBabel',
+    // 指定进程池
+    threadPool: happyThreadPool,
+    loaders: ['babel-loader?cacheDirectory']
+})
+</code></pre>
+<p><strong>压缩构建结果体积</strong></p>
+<ol>
+<li>文件结构可视化BundleAnalyzerPlugin</li>
+</ol>
+<pre><code class="language-js">const BundleAnalyzerPlugin = require('webpack-bundle-analyzer').BundleAnalyzerPlugin;
+module.exports = {
+  plugins: [
+    new BundleAnalyzerPlugin()
+  ]
+}
+</code></pre>
+<ol start="2">
+<li>拆分资源DllPlugin</li>
+<li>删除冗余代码Tree-Shaking（<code>重点</code>）</li>
+<li>按需加载（vue3动态组件、动态路由等）</li>
+</ol>
+<p><strong>开启gzip压缩</strong>（<code>重点</code>）<br>
+在<code>http request header</code>中加上</p>
+<pre><code class="language-js">accept-encoding:gzip
+</code></pre>
+<h3 id="渲染层面">渲染层面</h3>
+<p><strong>图片优化</strong>（<code>重点</code>）</p>
+<ul>
+<li>jpg有损、体积不算大，用在<code>大背景</code></li>
+<li>png无损、体积大，用在<code>小的logo</code></li>
+<li>svg体积小、不失真，用在<code>小图标</code></li>
+</ul>
+<p><strong>浏览器缓存</strong><br>
+减少网络 IO 消耗，提高访问速度</p>
+<ol>
+<li>http缓存（<code>重点</code>）</li>
+</ol>
+<p>强缓存：</p>
+<blockquote>
+<p>命中后<code>不会</code>与服务器通信。命中后<code>返回200</code>。<br>
+Expires：绝对<code>服务器</code>时间戳。<br>
+Cache-Control：max-age相对时间，<code>客户端</code>决定秒数，<code>优先级更高</code>。</p>
+</blockquote>
+<p>协商缓存：</p>
+<blockquote>
+<p><code>依赖</code>服务端与浏览器之间的通信。命中后<code>返回304</code>。<br>
+Last-Modified：服务器返回时间戳，后面请求时会通过If-Modified-Since带上这个时间戳，服务器会对比资源的<code>最后修改</code>时间。若已修改会带上<code>新的时间戳</code>，未修改返回304并且<code>不会</code>带上字段。<br>
+Last-Modified没有正确感知文件变化。<br>
+Etag：生成唯一<code>标识字符串</code>。if-None-Match步骤同上。<br>
+Etag需要服务器生成字符串的开销，是弊端。算是Last-Modified的强化，<code>优先级更高</code></p>
+</blockquote>
+<ol start="2">
+<li>
+<p>MemoryCache<br>
+内存缓存效率最快，浏览器最先尝试命中，但tab关闭后就没了。<br>
+例如：base64格式的图片，体积不大的js和css。</p>
+</li>
+<li>
+<p>Service Worker Cache<br>
+主线程之外的js线程，脱离浏览器窗体，因此<code>无法直接访问dom</code>。可以实现离线缓存、消息推送、网络代理等。</p>
+</li>
+</ol>
+<p><strong>本地存储和CND缓存</strong><br>
+过量的cookie会带来巨大的<code>性能浪费</code>，cookie跟着<code>域名</code>走，请求每个文件都会携带<br>
+CDN用来存放<code>静态资源</code>，根服务器用来生成<code>动态页面或返回非纯静态页面</code>。<br>
+例如认证信息放在不同的域名，这样静态资源就不用<code>携带用不到的cookie</code>（CDN）（<code>重点</code>）</p>
+<p><strong>服务端渲染</strong><br>
+HTML渲染DOM树、CSS渲染CSSOM树，<code>并行渲染</code>、结合得到渲染树、计算布局、绘制渲染。</p>
+<p><strong>浏览器加载文件优化</strong><br>
+css样式表优化、css是<code>从右到左</code>匹配</p>
+<ul>
+<li>避免通配符</li>
+<li>少用标签选择器、多用类选择器（<code>重点</code>）</li>
+<li>减少嵌套</li>
+</ul>
+<p>js加载</p>
+<ul>
+<li>当脚本与 DOM 元素和其它脚本之间的依赖关系不强时，可选用 async。（<code>重点</code>）</li>
+<li>当脚本依赖于 DOM 元素和其它脚本的执行结果时，可选用 defer。（<code>重点</code>）</li>
+</ul>
+<p><strong>DOM渲染优化</strong></p>
+<ul>
+<li>减少操作DOM，可用DOM Fragment先拼装后挂载</li>
+<li>缓存变量</li>
+</ul>
+<p><strong>Event Loop</strong></p>
+<ul>
+<li>宏任务出队时，任务是<code>一个一个</code>执行的。微任务出队时，任务是<code>一队一队</code>执行的。（执行完宏任务都会把微任务清空）</li>
+<li>更新DOM的节点使用微任务</li>
+</ul>
+<p><strong>回流和重绘</strong></p>
+<ul>
+<li>缓存变量，避免多次操作DOM（<code>重点</code>）</li>
+<li>类名合并样式等</li>
+<li>DOM离线</li>
+</ul>
+<p><strong>Lazy-Load</strong>（<code>重点</code>）<br>
+随着进入可视界面，background由<code>none</code>转变<code>真实图片</code>。转变前<code>data-src</code>存图片地址。</p>
+<pre><code class="language-js">imgs[i].src = imgs[i].getAttribute('data-src')
+</code></pre>
+<p>但scroll触发会很频繁，需要节流和防抖<code>↓</code></p>
+<p><strong>节流与防抖</strong>（<code>重点</code>）<br>
+Throttle：第一个人说了算。</p>
+<ul>
+<li>定义计时器，开始执行时<code>记录startTime</code>，再次执行时计算<code>时间差</code>，<code>大于设定时间差</code>再执行，<code>更新startTime</code><br>
+Debounce：最后一个人说了算。</li>
+<li>定义计时器<code>n秒后</code>执行，若n秒内再次触发，<code>清除</code>计时器，再次<code>重新计时</code></li>
+</ul>
+<p><strong>可视化监测</strong></p>
+<ul>
+<li>Performance面板</li>
+<li>LightHouse扩展</li>
+</ul>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#%E7%BD%91%E7%BB%9C%E5%B1%82%E9%9D%A2">网络层面</a></li>
+<li><a href="#%E6%B8%B2%E6%9F%93%E5%B1%82%E9%9D%A2">渲染层面</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+          <div class="next-post">
+            <div class="next">下一篇</div>
+            <a href="https://shelter01.github.io/post/nuxt/">
+              <h3 class="post-title">
+                nuxt
+              </h3>
+            </a>
+          </div>
+        
+
+        
+
+        <div class="site-footer">
+  
+  <a class="rss" href="https://shelter01.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

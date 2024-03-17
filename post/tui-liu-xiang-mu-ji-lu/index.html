@@ -1,0 +1,300 @@
+<html>
+  <head>
+    <meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>web端推流项目（笔记） | 谢尔特的小窝</title>
+<link rel="shortcut icon" href="https://shelter01.github.io/favicon.ico?v=1710687923650">
+<link href="https://cdn.jsdelivr.net/npm/remixicon@2.3.0/fonts/remixicon.css" rel="stylesheet">
+<link rel="stylesheet" href="https://shelter01.github.io/styles/main.css">
+<link rel="alternate" type="application/atom+xml" title="web端推流项目（笔记） | 谢尔特的小窝 - Atom Feed" href="https://shelter01.github.io/atom.xml">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Droid+Serif:400,700">
+
+
+
+    <meta name="description" content="业务需求：前端获取并合成摄像头与屏幕共享的流，webrtc推到后端。
+1.canvas合成画面
+通过getUserMedia采集摄像头与麦克风的流、getDisplayMedia采集屏幕共享的流。并将其拆分成四个track（拆分主要是为了合..." />
+    <meta name="keywords" content="项目记录" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.10.0/katex.min.css">
+    <script src="//cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.5.1/build/highlight.min.js"></script>
+  </head>
+  <body>
+    <div class="main">
+      <div class="main-content">
+        <div class="site-header">
+  <a href="https://shelter01.github.io">
+  <img class="avatar" src="https://shelter01.github.io/images/avatar.png?v=1710687923650" alt="">
+  </a>
+  <h1 class="site-title">
+    谢尔特的小窝
+  </h1>
+  <p class="site-description">
+    个人项目和面试题记录
+  </p>
+  <div class="menu-container">
+    
+      
+        <a href="/" class="menu">
+          首页
+        </a>
+      
+    
+      
+        <a href="/archives" class="menu">
+          归档
+        </a>
+      
+    
+      
+        <a href="/tags" class="menu">
+          标签
+        </a>
+      
+    
+      
+        <a href="/post/about" class="menu">
+          关于
+        </a>
+      
+    
+  </div>
+  <div class="social-container">
+    
+      
+    
+      
+    
+      
+    
+      
+    
+      
+    
+  </div>
+</div>
+
+        <div class="post-detail">
+          <article class="post">
+            <h2 class="post-title">
+              web端推流项目（笔记）
+            </h2>
+            <div class="post-info">
+              <span>
+                2023-03-13
+              </span>
+              <span>
+                3 min read
+              </span>
+              
+                <a href="https://shelter01.github.io/tag/vMKmCWzgl/" class="post-tag">
+                  # 项目记录
+                </a>
+              
+            </div>
+            
+            <div class="post-content-wrapper">
+              <div class="post-content" v-pre>
+                <p>业务需求：前端获取并合成摄像头与屏幕共享的流，webrtc推到后端。</p>
+<h3 id="1canvas合成画面">1.canvas合成画面</h3>
+<p>通过getUserMedia采集摄像头与麦克风的流、getDisplayMedia采集屏幕共享的流。并将其拆分成四个track（拆分主要是为了合成音频流、合成视频流需要的是stream）</p>
+<pre><code class="language-js">const stream = await navigator.mediaDevices.getUserMedia(constraints)
+stream.getVideoTracks()[0] // 摄像头轨道
+stream.getAudioTracks()[0] // 麦克风轨道
+
+const stream = navigator.mediaDevices.getDisplayMedia(constraints)
+stream.getVideoTracks()[0] // 屏幕共享视频轨道
+stream.getAudioTracks()[0] // 屏幕共享音频轨道
+</code></pre>
+<p>由于canvas合成流需要HTMLVideoElement，需要做转换。要将video设置为静音、否则会有回声。</p>
+<pre><code class="language-js">// canvas合成视频需要将MediaStream转HTMLVideoElement
+const getVideoElementWithStream = (stream: MediaStream) =&gt; {
+  const video = document.createElement('video')
+  video.autoplay = true
+  // 静音避免回声
+  video.onloadedmetadata = () =&gt; {
+    video.muted = true
+  }
+  video.playsInline = true
+  video.srcObject = stream
+  return video
+}
+</code></pre>
+<p>动态创建canvas、设置宽高，获取content2d实例</p>
+<pre><code class="language-js">constructor(resolution: string) {
+    this.canvas = document.createElement('canvas')
+
+    // 720与1080分辨率动态改变宽高
+    const _rst = RESOLUTION_TYPE.filter((v) =&gt; v.value === resolution)[0]
+    this.canvas.width = _rst.w
+    this.canvas.height = _rst.h
+    this._context2d = this.canvas.getContext('2d')
+  }
+</code></pre>
+<p>canvas合成视频的frame</p>
+<pre><code class="language-js">private _toEachFrameOfCanvas() {
+    this._context2d.drawImage(
+          this._cameraVideo as HTMLVideoElement,
+          _layout.left,
+          _layout.top,
+          _layout.width,
+          _layout.height
+        )
+    this._context2d.drawImage(
+            this._screenVideo as HTMLVideoElement,
+            _layout.left,
+            _layout.top,
+            _layout.width,
+            _layout.height
+          )
+}
+</code></pre>
+<p>requestAnimationFrame以浏览器刷新的频率绘制视频，不过这个方法会在浏览器处于后台的时候休眠，找到的解决办法有两个。</p>
+<pre><code class="language-js">// 1.web worker去触发requestAnimationFrame
+initWorker() {
+    const fn = () =&gt; {
+      if (this._dataWorker) {
+        this.closeDataWorker()
+      }
+      // 接收消息
+      self.onmessage = (e) =&gt; {
+        if (e.data.type === 'start') {
+          startAnimation()
+        }
+      }
+
+      const startAnimation = () =&gt; {
+        requestAnimationFrame(loop)
+      }
+
+      const loop = () =&gt; {
+        self.postMessage({
+          type: 'loop'
+        })
+        // 主线程后台会休眠
+        requestAnimationFrame(loop)
+      }
+    }
+
+    const blob = new Blob(['(' + fn.toString() + ')()'])
+    const url = window.URL.createObjectURL(blob)
+    this._dataWorker = new Worker(url)
+
+    this._dataWorker.postMessage({
+      type: 'start'
+    })
+    this._dataWorker.onmessage = (e) =&gt; {
+      this._animationFrameHandler()
+    }
+}
+
+// 2.electron，变成了桌面端工具，未采用
+mainWindow.webContents.setBackgroundThrottling(false) // 保持后台不休眠
+</code></pre>
+<h3 id="2webrtc推流">2.webrtc推流</h3>
+<p>创建实例</p>
+<pre><code class="language-js">this._pc = new RTCPeerConnection()
+</code></pre>
+<p>添加track（添加之前需要将之前零散的track合成为stream）</p>
+<pre><code class="language-js">stream.getTracks().forEach((track) =&gt; {
+      if (track.kind === 'video') {
+        this._pc.addTransceiver(track, {
+          // 仅为推流端
+          direction: 'sendonly'
+        })
+      } else if (track.kind === 'audio') {
+        this._pc.addTransceiver(track, {
+          direction: 'sendonly'
+        })
+      }
+})
+</code></pre>
+<p>创建一个SDP offer、offer.sdp为本地sdp</p>
+<pre><code class="language-js">const offer = await this._pc.createOffer()
+await this._pc.setLocalDescription(offer)
+</code></pre>
+<p>与将offer.sdp传给服务端，交换信息后获得最终的sdp。</p>
+<pre><code class="language-js">await this._pc.setRemoteDescription(
+    new RTCSessionDescription({
+        type: 'answer',
+        // 修复AnswerSdp中的顺序问题，不重要
+        sdp: this._convertAnswerSdp(offer.sdp, session.sdp)
+    })
+)
+</code></pre>
+
+              </div>
+              <div class="toc-container">
+                <ul class="markdownIt-TOC">
+<li>
+<ul>
+<li>
+<ul>
+<li><a href="#1canvas%E5%90%88%E6%88%90%E7%94%BB%E9%9D%A2">1.canvas合成画面</a></li>
+<li><a href="#2webrtc%E6%8E%A8%E6%B5%81">2.webrtc推流</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+              </div>
+            </div>
+          </article>
+        </div>
+
+        
+
+        
+
+        <div class="site-footer">
+  
+  <a class="rss" href="https://shelter01.github.io/atom.xml" target="_blank">
+    <i class="ri-rss-line"></i> RSS
+  </a>
+</div>
+
+      </div>
+    </div>
+
+    <script>
+      hljs.initHighlightingOnLoad()
+
+      let mainNavLinks = document.querySelectorAll(".markdownIt-TOC a");
+
+      // This should probably be throttled.
+      // Especially because it triggers during smooth scrolling.
+      // https://lodash.com/docs/4.17.10#throttle
+      // You could do like...
+      // window.addEventListener("scroll", () => {
+      //    _.throttle(doThatStuff, 100);
+      // });
+      // Only not doing it here to keep this Pen dependency-free.
+
+      window.addEventListener("scroll", event => {
+        let fromTop = window.scrollY;
+
+        mainNavLinks.forEach((link, index) => {
+          let section = document.getElementById(decodeURI(link.hash).substring(1));
+          let nextSection = null
+          if (mainNavLinks[index + 1]) {
+            nextSection = document.getElementById(decodeURI(mainNavLinks[index + 1].hash).substring(1));
+          }
+          if (section.offsetTop <= fromTop) {
+            if (nextSection) {
+              if (nextSection.offsetTop > fromTop) {
+                link.classList.add("current");
+              } else {
+                link.classList.remove("current");    
+              }
+            } else {
+              link.classList.add("current");
+            }
+          } else {
+            link.classList.remove("current");
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>
